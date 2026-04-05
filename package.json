@@ -1,0 +1,13 @@
+{
+  "name": "grammatikk-generator",
+  "version": "1.0.0",
+  "description": "Grammatikk-generator for MBO – Molde voksenopplæringssenter",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "docx": "^8.5.0",
+    "pptxgenjs": "^3.12.0"
+  }
+}
