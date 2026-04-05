@@ -605,7 +605,12 @@ async function generer() {
     if (!svar.ok) throw new Error(json.feil || 'Ukjent feil');
 
     let tekst = json.tekst.trim();
-    if (tekst.startsWith('```')) tekst = tekst.replace(/^```[a-z]*\n?/i,'').replace(/\n?```$/,'').trim();
+    // Fjern eventuelle markdown-backticks
+    tekst = tekst.replace(/^```[a-z]*\n?/i,'').replace(/\n?```$/,'').trim();
+    // Finn første { og siste } for å isolere JSON
+    const start = tekst.indexOf('{');
+    const slutt = tekst.lastIndexOf('}');
+    if (start !== -1 && slutt !== -1) tekst = tekst.slice(start, slutt + 1);
     innhold = JSON.parse(tekst);
 
     visInnhold(innhold);
@@ -634,7 +639,8 @@ function visInnhold(d) {
   function lagBoks(cls, tittel, tekst) {
     const div = document.createElement('div');
     div.className = 'info-boks ' + cls;
-    div.innerHTML = '<h3>' + tittel + '</h3><p>' + tekst.replace(/\n/g,'<br>') + '</p>';
+    const sikkerTekst = (tekst || '').toString();
+    div.innerHTML = '<h3>' + tittel + '</h3><p>' + sikkerTekst.replace(/\n/g,'<br>') + '</p>';
     cont.appendChild(div);
   }
 
