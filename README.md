@@ -64,4 +64,5 @@ Nøkkelen starter med `AIza...`
 - **Backend**: Vercel serverless functions (Node.js)
 - **AI**: Google Gemini 2.0 Flash (`generativelanguage.googleapis.com`)
 - **Word**: `docx` npm-pakke
-- **PowerPoint**: `pptxgenjs` npm-pakke 
+- **PowerPoint**: `pptxgenjs` npm-pakke
+- ## Oppdatert
