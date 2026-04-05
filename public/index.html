@@ -6,354 +6,98 @@
   <title>Grammatikk-generator – MBO</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: Arial, sans-serif; background: #1A3A5C; color: #1A1A2E; overflow: hidden; }
 
-    html, body {
-      height: 100%;
-      font-family: Arial, sans-serif;
-      background: #1A3A5C;
-      color: #1A1A2E;
-      overflow: hidden;
-    }
-
-    /* ══ LOGIN ══ */
-    #login {
-      position: fixed; inset: 0;
-      background: linear-gradient(135deg, #1A3A5C 0%, #0F2340 100%);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 9999;
-    }
-    .login-boks {
-      background: #fff;
-      border-radius: 20px;
-      padding: 48px 44px 40px;
-      width: 400px;
-      text-align: center;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-    }
+    /* LOGIN */
+    #login { position: fixed; inset: 0; background: linear-gradient(135deg, #1A3A5C, #0F2340); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+    .login-boks { background: #fff; border-radius: 20px; padding: 48px 44px 40px; width: 400px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
     .login-boks .ikon { font-size: 56px; margin-bottom: 14px; }
     .login-boks h2 { font-size: 24px; color: #1F4E79; margin-bottom: 4px; font-weight: 800; }
     .login-boks .sub { font-size: 13px; color: #777; margin-bottom: 32px; }
     .login-boks label { display: block; text-align: left; font-size: 13px; font-weight: 700; color: #1F4E79; margin-bottom: 7px; }
-    .login-boks input {
-      width: 100%; padding: 13px 16px;
-      border: 2px solid #C8D8E8; border-radius: 10px;
-      font-size: 16px; letter-spacing: 0.1em;
-      margin-bottom: 18px; outline: none;
-      text-align: center;
-    }
+    .login-boks input { width: 100%; padding: 13px 16px; border: 2px solid #C8D8E8; border-radius: 10px; font-size: 16px; letter-spacing: 0.1em; margin-bottom: 18px; outline: none; text-align: center; }
     .login-boks input:focus { border-color: #2E75B6; }
-    .login-boks button {
-      width: 100%; padding: 14px;
-      background: linear-gradient(135deg, #1F4E79, #2E75B6);
-      color: #fff; border: none; border-radius: 10px;
-      font-size: 16px; font-weight: 800; cursor: pointer;
-      transition: opacity .15s;
-    }
+    .login-boks button { width: 100%; padding: 14px; background: linear-gradient(135deg, #1F4E79, #2E75B6); color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 800; cursor: pointer; }
     .login-boks button:hover { opacity: .88; }
     .login-feil { margin-top: 12px; font-size: 13px; color: #C84B31; min-height: 18px; }
 
-    /* ══ APP LAYOUT ══ */
-    #app {
-      display: grid;
-      grid-template-rows: auto 1fr;
-      height: 100vh;
-    }
-
-    /* ══ HEADER ══ */
+    /* APP */
+    #app { display: grid; grid-template-rows: auto 1fr; height: 100vh; }
     .toppstripe { height: 5px; background: linear-gradient(90deg, #E9A800, #F5C842); }
-    header {
-      background: linear-gradient(135deg, #1F4E79 0%, #2E75B6 100%);
-      color: #fff;
-      padding: 12px 28px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 3px 12px rgba(0,0,0,.3);
-    }
+    header { background: linear-gradient(135deg, #1F4E79, #2E75B6); color: #fff; padding: 12px 28px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 3px 12px rgba(0,0,0,.3); }
     .header-left { display: flex; align-items: center; gap: 12px; }
     .header-left .ikon { font-size: 28px; }
     .header-left h1 { font-size: 19px; font-weight: 800; }
     .header-left p { font-size: 11px; opacity: .75; margin-top: 1px; }
-    .header-right { font-size: 12px; opacity: .7; }
 
-    /* ══ INNHOLD – 3-KOLONNE LAYOUT ══ */
-    .innhold {
-      display: grid;
-      grid-template-columns: 280px 1fr 320px;
-      gap: 0;
-      height: 100%;
-      overflow: hidden;
-    }
+    /* 3-KOLONNE */
+    .innhold { display: grid; grid-template-columns: 270px 1fr 300px; height: 100%; overflow: hidden; }
 
-    /* ══ VENSTRE PANEL ══ */
-    .venstre {
-      background: #F0F5FB;
-      border-right: 2px solid #C8D8E8;
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      overflow-y: auto;
-      padding: 16px;
-    }
-
-    .seksjon-tittel {
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      color: #1F4E79;
-      margin-bottom: 8px;
-      margin-top: 4px;
-    }
-
-    /* Nivå-knapper */
-    .nivå-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      margin-bottom: 20px;
-    }
-    .nivå-knapp {
-      padding: 10px 4px;
-      background: #fff;
-      border: 2px solid #C8D8E8;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: 800;
-      cursor: pointer;
-      text-align: center;
-      transition: all .15s;
-      color: #1A1A2E;
-    }
+    /* VENSTRE */
+    .venstre { background: #F0F5FB; border-right: 2px solid #C8D8E8; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 0; }
+    .seksjon-tittel { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #1F4E79; margin-bottom: 8px; margin-top: 4px; }
+    .nivå-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 18px; }
+    .nivå-knapp { padding: 10px 4px; background: #fff; border: 2px solid #C8D8E8; border-radius: 8px; font-size: 15px; font-weight: 800; cursor: pointer; text-align: center; transition: all .15s; color: #1A1A2E; }
     .nivå-knapp:hover { background: #D6E4F0; border-color: #2E75B6; }
     .nivå-knapp.valgt { background: #1F4E79; color: #fff; border-color: #1F4E79; }
-
-    /* Tema-liste */
-    .tema-liste {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 20px;
-    }
-    .tema-knapp {
-      padding: 8px 10px;
-      background: #fff;
-      border: 1.5px solid #D0DDE8;
-      border-radius: 7px;
-      font-size: 12px;
-      cursor: pointer;
-      text-align: left;
-      line-height: 1.3;
-      transition: all .15s;
-      color: #1A1A2E;
-    }
+    .tema-liste { display: flex; flex-direction: column; gap: 4px; }
+    .tema-knapp { padding: 8px 10px; background: #fff; border: 1.5px solid #D0DDE8; border-radius: 7px; font-size: 12px; cursor: pointer; text-align: left; line-height: 1.3; transition: all .15s; color: #1A1A2E; }
     .tema-knapp:hover { background: #D6E4F0; border-color: #2E75B6; color: #1F4E79; }
-    .tema-knapp.valgt {
-      background: linear-gradient(135deg, #1F4E79, #2E75B6);
-      color: #fff; border-color: #1F4E79; font-weight: 700;
-    }
+    .tema-knapp.valgt { background: linear-gradient(135deg, #1F4E79, #2E75B6); color: #fff; border-color: #1F4E79; font-weight: 700; }
 
-    /* ══ MIDTRE PANEL ══ */
-    .midtre {
-      display: flex;
-      flex-direction: column;
-      background: #F8FBFF;
-      overflow: hidden;
-    }
-
-    .midtre-topp {
-      padding: 18px 22px 14px;
-      border-bottom: 2px solid #D6E4F0;
-      background: #fff;
-    }
-    .valgt-info {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-    .badge {
-      display: inline-block;
-      padding: 5px 14px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
-    }
+    /* MIDTRE */
+    .midtre { display: flex; flex-direction: column; background: #F8FBFF; overflow: hidden; }
+    .midtre-topp { padding: 16px 20px 14px; border-bottom: 2px solid #D6E4F0; background: #fff; }
+    .valgt-info { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    .badge { display: inline-block; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; }
     .badge-blå  { background: #D6E4F0; color: #1F4E79; }
     .badge-grønn { background: #D8F3DC; color: #2C6E49; }
-    .badge-grå  { background: #E8E8E8; color: #555; font-style: italic; }
-
-    #genKnapp {
-      padding: 12px 32px;
-      background: linear-gradient(135deg, #1F4E79, #2E75B6);
-      color: #fff; border: none; border-radius: 10px;
-      font-size: 15px; font-weight: 800; cursor: pointer;
-      transition: opacity .15s;
-      box-shadow: 0 3px 10px rgba(31,78,121,.3);
-    }
+    .badge-grå  { background: #E8E8E8; color: #666; font-style: italic; }
+    #genKnapp { padding: 12px 28px; background: linear-gradient(135deg, #1F4E79, #2E75B6); color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 10px rgba(31,78,121,.3); }
     #genKnapp:hover { opacity: .88; }
     #genKnapp:disabled { background: #AAB8CC; box-shadow: none; cursor: not-allowed; }
-
-    .spinner {
-      display: inline-block; width: 16px; height: 16px;
-      border: 3px solid rgba(255,255,255,.4);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: snurr .7s linear infinite;
-      margin-right: 6px; vertical-align: middle;
-    }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 3px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: snurr .7s linear infinite; margin-right: 6px; vertical-align: middle; }
     @keyframes snurr { to { transform: rotate(360deg); } }
-
-    #statusMelding {
-      display: none;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-size: 13px;
-      margin-top: 10px;
-    }
+    #statusMelding { display: none; padding: 10px 16px; border-radius: 8px; font-size: 13px; margin-top: 10px; }
     #statusMelding.info { display: block; background: #D6E4F0; color: #1F4E79; }
     #statusMelding.feil { display: block; background: #FFE4DE; color: #C84B31; }
     #statusMelding.ok   { display: block; background: #D8F3DC; color: #2C6E49; }
-
-    /* Innhold-visning */
-    .midtre-innhold {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px 22px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .info-boks {
-      background: #fff;
-      border-radius: 12px;
-      padding: 20px 22px;
-      box-shadow: 0 2px 8px rgba(31,78,121,.07);
-      border-left: 5px solid #ccc;
-    }
+    .midtre-innhold { flex: 1; overflow-y: auto; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+    .info-boks { background: #fff; border-radius: 12px; padding: 18px 20px; box-shadow: 0 2px 8px rgba(31,78,121,.07); border-left: 5px solid #ccc; }
     .info-boks.blå   { border-left-color: #2E75B6; }
     .info-boks.grønn { border-left-color: #2C6E49; background: #F5FFF8; }
     .info-boks.gul   { border-left-color: #E9A800; background: #FFFBEE; }
     .info-boks.lilla { border-left-color: #7B5EA7; background: #F8F4FF; }
-
-    .info-boks h3 {
-      font-size: 13px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .05em;
-      margin-bottom: 8px;
-      color: #333;
-    }
+    .info-boks h3 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
     .info-boks.blå h3   { color: #1F4E79; }
     .info-boks.grønn h3 { color: #2C6E49; }
     .info-boks.gul h3   { color: #8A6000; }
     .info-boks.lilla h3 { color: #5A3E88; }
-
-    .info-boks p, .info-boks pre {
-      font-size: 13.5px;
-      line-height: 1.75;
-      color: #2A2A3E;
-      white-space: pre-wrap;
-    }
-
-    .tom-tilstand {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      color: #AAB8CC;
-      text-align: center;
-      gap: 12px;
-    }
+    .info-boks p { font-size: 13.5px; line-height: 1.75; color: #2A2A3E; }
+    .tom-tilstand { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #AAB8CC; text-align: center; gap: 12px; }
     .tom-tilstand .stor-ikon { font-size: 64px; opacity: .4; }
     .tom-tilstand p { font-size: 15px; max-width: 280px; }
 
-    /* ══ HØYRE PANEL ══ */
-    .høyre {
-      background: #1A3A5C;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      border-left: 2px solid #0F2340;
-      overflow-y: auto;
-      padding: 16px;
-      gap: 12px;
-    }
-
-    .høyre-tittel {
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      color: #A0BDD8;
-      margin-bottom: 4px;
-    }
-
-    .nedlasting-kort {
-      background: rgba(255,255,255,.08);
-      border: 1.5px solid rgba(255,255,255,.15);
-      border-radius: 12px;
-      padding: 16px;
-    }
-    .nedlasting-kort .fil-rad {
-      display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
-    }
-    .nedlasting-kort .fil-ikon { font-size: 28px; }
-    .nedlasting-kort .fil-navn { font-size: 13px; font-weight: 700; color: #E0EEFF; }
-    .nedlasting-kort .fil-type { font-size: 11px; color: #88AACC; margin-top: 1px; }
-
-    .knapp-docx {
-      width: 100%; padding: 11px;
-      background: linear-gradient(135deg, #1F4E79, #2E75B6);
-      color: #fff; border: none; border-radius: 8px;
-      font-size: 13px; font-weight: 700; cursor: pointer;
-      transition: opacity .15s; margin-top: 4px;
-    }
-    .knapp-pptx {
-      width: 100%; padding: 11px;
-      background: linear-gradient(135deg, #C84B31, #E05A3A);
-      color: #fff; border: none; border-radius: 8px;
-      font-size: 13px; font-weight: 700; cursor: pointer;
-      transition: opacity .15s; margin-top: 4px;
-    }
+    /* HØYRE */
+    .høyre { background: #1A3A5C; color: #fff; display: flex; flex-direction: column; border-left: 2px solid #0F2340; overflow-y: auto; padding: 14px; gap: 10px; }
+    .høyre-tittel { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #A0BDD8; margin-bottom: 2px; }
+    .nedlasting-kort { background: rgba(255,255,255,.08); border: 1.5px solid rgba(255,255,255,.15); border-radius: 12px; padding: 14px; }
+    .nedlasting-kort .fil-rad { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .nedlasting-kort .fil-ikon { font-size: 26px; }
+    .nedlasting-kort .fil-navn { font-size: 12px; font-weight: 700; color: #E0EEFF; }
+    .nedlasting-kort .fil-type { font-size: 11px; color: #88AACC; }
+    .knapp-docx { width: 100%; padding: 10px; background: linear-gradient(135deg, #1F4E79, #2E75B6); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .knapp-pptx { width: 100%; padding: 10px; background: linear-gradient(135deg, #C84B31, #E05A3A); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 4px; }
     .knapp-docx:hover, .knapp-pptx:hover { opacity: .85; }
     .knapp-docx:disabled, .knapp-pptx:disabled { background: #3A5A7A; cursor: not-allowed; opacity: .5; }
-
-    .oppgave-liste {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .oppgave-pill {
-      background: rgba(255,255,255,.07);
-      border: 1.5px solid rgba(255,255,255,.12);
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 12px;
-      color: #C8DDEF;
-    }
+    .oppgave-liste { display: flex; flex-direction: column; gap: 6px; }
+    .oppgave-pill { background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.12); border-radius: 8px; padding: 9px 12px; font-size: 12px; color: #C8DDEF; }
     .oppgave-pill strong { color: #fff; display: block; margin-bottom: 2px; }
+    .tips-boks { background: rgba(233,168,0,.12); border: 1.5px solid rgba(233,168,0,.3); border-radius: 10px; padding: 12px 14px; font-size: 12px; color: #FFDDA0; line-height: 1.6; margin-top: auto; }
 
-    .tips-boks {
-      background: rgba(233,168,0,.12);
-      border: 1.5px solid rgba(233,168,0,.3);
-      border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 12px;
-      color: #FFDDA0;
-      line-height: 1.6;
-    }
-
-    /* ══ RESPONSIV ══ */
-    @media (max-width: 1100px) {
-      .innhold { grid-template-columns: 240px 1fr 280px; }
-    }
-    @media (max-width: 860px) {
+    @media (max-width: 1000px) {
       html, body { overflow: auto; }
-      .innhold { grid-template-columns: 1fr; grid-template-rows: auto; }
+      .innhold { grid-template-columns: 1fr; }
       .høyre { display: none; }
       #app { height: auto; }
     }
@@ -361,7 +105,6 @@
 </head>
 <body>
 
-<!-- ══ INNLOGGING ══ -->
 <div id="login">
   <div class="login-boks">
     <div class="ikon">📚</div>
@@ -375,7 +118,6 @@
   </div>
 </div>
 
-<!-- ══ APP ══ -->
 <div id="app">
   <div>
     <div class="toppstripe"></div>
@@ -387,13 +129,11 @@
           <p>Molde voksenopplæringssenter &nbsp;|&nbsp; Nivå A0–C1 &nbsp;|&nbsp; 50 grammatikktemaer</p>
         </div>
       </div>
-      <div class="header-right">Genererer Word + PowerPoint</div>
     </header>
   </div>
 
   <div class="innhold">
 
-    <!-- ══ VENSTRE ══ -->
     <div class="venstre">
       <p class="seksjon-tittel">1. Velg nivå</p>
       <div class="nivå-grid">
@@ -404,36 +144,29 @@
         <button class="nivå-knapp" onclick="velgNivå(this,'B2')">B2</button>
         <button class="nivå-knapp" onclick="velgNivå(this,'C1')">C1</button>
       </div>
-
       <p class="seksjon-tittel">2. Velg grammatikktema</p>
       <div class="tema-liste" id="temaListe"></div>
     </div>
 
-    <!-- ══ MIDTRE ══ -->
     <div class="midtre">
       <div class="midtre-topp">
         <div class="valgt-info">
           <span id="nivåBadge" class="badge badge-grå">Ingen nivå valgt</span>
           <span id="temaBadge" class="badge badge-grå">Ingen tema valgt</span>
         </div>
-        <button id="genKnapp" onclick="generer()" disabled>
-          ✨ Generer grammatikkoppgaver
-        </button>
+        <button id="genKnapp" onclick="generer()" disabled>✨ Generer grammatikkoppgaver</button>
         <div id="statusMelding"></div>
       </div>
-
       <div class="midtre-innhold" id="midtreInnhold">
-        <div class="tom-tilstand" id="tomTilstand">
+        <div class="tom-tilstand">
           <div class="stor-ikon">📖</div>
           <p>Velg nivå og grammatikktema til venstre, og klikk «Generer»</p>
         </div>
       </div>
     </div>
 
-    <!-- ══ HØYRE ══ -->
-    <div class="høyre" id="høyrePanel">
+    <div class="høyre">
       <p class="høyre-tittel">Last ned filer</p>
-
       <div class="nedlasting-kort">
         <div class="fil-rad">
           <div class="fil-ikon">📄</div>
@@ -442,11 +175,8 @@
             <div class="fil-type">Word-dokument (.docx)</div>
           </div>
         </div>
-        <button class="knapp-docx" id="docxKnapp" onclick="lastNed('docx')" disabled>
-          ⬇ Last ned Word
-        </button>
+        <button class="knapp-docx" id="docxKnapp" onclick="lastNed('docx')" disabled>⬇ Last ned Word</button>
       </div>
-
       <div class="nedlasting-kort">
         <div class="fil-rad">
           <div class="fil-ikon">📊</div>
@@ -455,18 +185,14 @@
             <div class="fil-type">PowerPoint (.pptx)</div>
           </div>
         </div>
-        <button class="knapp-pptx" id="pptxKnapp" onclick="lastNed('pptx')" disabled>
-          ⬇ Last ned PowerPoint
-        </button>
+        <button class="knapp-pptx" id="pptxKnapp" onclick="lastNed('pptx')" disabled>⬇ Last ned PowerPoint</button>
       </div>
-
-      <p class="høyre-tittel" style="margin-top:8px;">Oppgaveoversikt</p>
+      <p class="høyre-tittel" style="margin-top:6px;">Oppgaveoversikt</p>
       <div class="oppgave-liste" id="oppgaveListe">
         <div style="font-size:12px;color:#5A7A9A;font-style:italic;">Vises etter generering</div>
       </div>
-
-      <div class="tips-boks" style="margin-top:auto;">
-        💡 <strong>Tips:</strong> Velg tema og nivå til venstre. Generer innholdet, og last deretter ned Word-oppgaveark og PowerPoint-presentasjon.
+      <div class="tips-boks">
+        💡 Velg nivå og tema til venstre. Generer, og last ned Word og PowerPoint.
       </div>
     </div>
 
@@ -519,13 +245,12 @@ async function loggInn() {
   const kode = document.getElementById('passordFelt').value.trim();
   const feilEl = document.getElementById('loginFeil');
   if (!kode) return;
-  feilEl.textContent = '';
-
+  feilEl.textContent = 'Sjekker...';
   try {
     const svar = await fetch('/api/generer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passord: kode, system: 'ping', prompt: 'ping' })
+      body: JSON.stringify({ passord: kode })
     });
     if (svar.status === 401) {
       feilEl.textContent = '❌ Feil passord – prøv igjen.';
@@ -572,52 +297,24 @@ async function generer() {
   const knapp = document.getElementById('genKnapp');
   knapp.disabled = true;
   knapp.innerHTML = '<span class="spinner"></span> Genererer...';
-  document.getElementById('tomTilstand') && (document.getElementById('tomTilstand').style.display = 'none');
+  document.getElementById('midtreInnhold').innerHTML = '';
   visStatus('info', '⏳ Henter innhold fra Gemini – vennligst vent...');
-
-  const system = 'Du er en erfaren norsklærer ved Molde voksenopplæringssenter (MBO).\n'
-    + 'Du lager grammatikkoppgaver for voksne innvandrere på CEFR-nivå ' + nivå + '.\n'
-    + 'Bokmål alltid. Svar KUN med gyldig JSON – ingen tekst utenfor JSON-blokken.';
-
-  const prompt = 'Lag grammatikkmateriell om: "' + tema + '" for nivå ' + nivå + '.\n\n'
-    + 'Returner BARE denne JSON-strukturen (ingen backticks):\n'
-    + '{"tema":"' + tema + '","niva":"' + nivå + '",'
-    + '"forklaring":"Pedagogisk forklaring 6-10 setninger tilpasset ' + nivå + '. Nøkkelregler og eksempler.",'
-    + '"grammatikkForklaring":"Mønstre med pil. 5-8 punkter med bindestrek.",'
-    + '"lesetekst":"120-180 ord med mange eksempler på ' + tema + '. Naturlig norsk, tilpasset ' + nivå + '.",'
-    + '"oppgaver":['
-    + '{"type":"Fyll inn","instruksjon":"Fyll inn riktig form (ordene i parentes).","innhold":["1. Hun ________ (å jobbe) på sykehuset.","2. De ________ (å lære) norsk hver dag.","3. Jeg ________ (å ha) to barn.","4. Han ________ (å bo) i Molde.","5. Vi ________ (å spise) lunsj kl. 12."],"skrivelinje":0},'
-    + '{"type":"Riktig eller galt?","instruksjon":"Skriv R eller G. Rett de gale setningene.","innhold":["1. ___ Jeg kommer fra Somalia.","2. ___ Han bo i Oslo nå.","3. ___ Vi har tre barn.","4. ___ De spiser ikke kjøtt.","5. ___ Hun snakker veldig god norsk."],"skrivelinje":0},'
-    + '{"type":"Sett i riktig rekkefølge","instruksjon":"Skriv setningen med ordene i riktig rekkefølge.","innhold":["1. norsk / læreren / underviser / i","2. jobb / hun / har / ikke / nå","3. morgen / tidlig / stå / opp / må / han","4. kaffe / vil / du / ha / litt","5. buss / tar / de / til / jobben"],"skrivelinje":5},'
-    + '{"type":"Skriveoppgave","instruksjon":"Skriv 5 egne setninger med riktig bruk av ' + tema + '.","innhold":[],"skrivelinje":6},'
-    + '{"type":"Velg riktig alternativ","instruksjon":"Sett ring rundt riktig alternativ.","innhold":["1. Jeg (er / være / er å) glad i Norge.","2. De (har / har ikke / ikke har) spist.","3. Hun (snakker / snakker ikke / ikke snakker) alltid sannheten.","4. Vi (vil / kan / skal) møtes i morgen kl. ti.","5. (Hvem / Hva / Hvilken) heter han?"],"skrivelinje":0}'
-    + '],'
-    + '"fasit":"Oppgave A:\\n1. jobber\\n2. lærer\\n3. har\\n4. bor\\n5. spiser\\n\\nOppgave B:\\n1. R\\n2. G - Han bor i Oslo nå.\\n3. R\\n4. R\\n5. G - Hun snakker veldig godt norsk.\\n\\nOppgave C:\\n1. Læreren underviser i norsk.\\n2. Hun har ikke jobb nå.\\n3. Han må stå opp tidlig om morgenen.\\n4. Vil du ha litt kaffe?\\n5. De tar buss til jobben.\\n\\nOppgave D: Åpen.\\n\\nOppgave E:\\n1. er\\n2. har\\n3. snakker ikke\\n4. skal\\n5. Hva"'
-    + '}\n\nLAG innholdet SPESIFIKT for "' + tema + '" på nivå ' + nivå + '. Fasit må stemme med oppgavene.';
 
   try {
     const svar = await fetch('/api/generer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passord, system, prompt, maxTokens: 8000 })
+      body: JSON.stringify({ passord, tema, niva: nivå })
     });
     const json = await svar.json();
     if (!svar.ok) throw new Error(json.feil || 'Ukjent feil');
 
-    let tekst = json.tekst.trim();
-    // Fjern eventuelle markdown-backticks
-    tekst = tekst.replace(/^```[a-z]*\n?/i,'').replace(/\n?```$/,'').trim();
-    // Finn første { og siste } for å isolere JSON
-    const start = tekst.indexOf('{');
-    const slutt = tekst.lastIndexOf('}');
-    if (start !== -1 && slutt !== -1) tekst = tekst.slice(start, slutt + 1);
-    innhold = JSON.parse(tekst);
-
+    innhold = json.innhold;
     visInnhold(innhold);
 
     const base = tema.replace(/[^a-zA-Z0-9æøåÆØÅ]/g,'_') + '_' + nivå;
     document.getElementById('docxNavn').textContent = base + '.docx';
-    document.getElementById('pptxNavn').textContent = base + '_pres.pptx';
+    document.getElementById('pptxNavn').textContent = base + '_presentasjon.pptx';
     document.getElementById('docxKnapp').disabled = false;
     document.getElementById('pptxKnapp').disabled = false;
     visOppgaveListe(innhold.oppgaver);
@@ -625,12 +322,15 @@ async function generer() {
 
   } catch(e) {
     visStatus('feil', '❌ Feil: ' + e.message);
+    document.getElementById('midtreInnhold').innerHTML = '<div class="tom-tilstand"><div class="stor-ikon">⚠️</div><p>' + e.message + '</p></div>';
   }
 
   knapp.disabled = false;
   knapp.innerHTML = '✨ Generer grammatikkoppgaver';
   sjekkKnapp();
 }
+
+function str(val) { return (val || '').toString(); }
 
 function visInnhold(d) {
   const cont = document.getElementById('midtreInnhold');
@@ -639,8 +339,7 @@ function visInnhold(d) {
   function lagBoks(cls, tittel, tekst) {
     const div = document.createElement('div');
     div.className = 'info-boks ' + cls;
-    const sikkerTekst = (tekst || '').toString();
-    div.innerHTML = '<h3>' + tittel + '</h3><p>' + sikkerTekst.replace(/\n/g,'<br>') + '</p>';
+    div.innerHTML = '<h3>' + tittel + '</h3><p>' + str(tekst).replace(/\n/g,'<br>') + '</p>';
     cont.appendChild(div);
   }
 
@@ -648,21 +347,19 @@ function visInnhold(d) {
   lagBoks('grønn', '🌿 Mønstre og eksempler',    d.grammatikkForklaring);
   lagBoks('gul',   '📖 Lesetekst',               d.lesetekst);
 
-  if (d.oppgaver) {
-    const boksfarger = ['blå','grønn','gul','lilla','blå'];
-    const bokstaver = ['A','B','C','D','E'];
-    d.oppgaver.forEach(function(o, i) {
-      const div = document.createElement('div');
-      div.className = 'info-boks ' + (boksfarger[i] || 'blå');
-      let html = '<h3>Oppgave ' + bokstaver[i] + ') – ' + o.type + '</h3>';
-      html += '<p style="font-style:italic;margin-bottom:8px;">' + o.instruksjon + '</p>';
-      if (o.innhold && o.innhold.length > 0) {
-        html += '<p>' + o.innhold.join('<br>') + '</p>';
-      }
-      div.innerHTML = html;
-      cont.appendChild(div);
-    });
-  }
+  const farger = ['blå','grønn','gul','lilla','blå'];
+  const brev = ['A','B','C','D','E'];
+  (d.oppgaver || []).forEach(function(o, i) {
+    const div = document.createElement('div');
+    div.className = 'info-boks ' + (farger[i] || 'blå');
+    let html = '<h3>Oppgave ' + brev[i] + ') – ' + str(o.type) + '</h3>';
+    html += '<p style="font-style:italic;margin-bottom:6px;">' + str(o.instruksjon) + '</p>';
+    if (o.innhold && o.innhold.length > 0) {
+      html += '<p>' + o.innhold.map(str).join('<br>') + '</p>';
+    }
+    div.innerHTML = html;
+    cont.appendChild(div);
+  });
 }
 
 function visOppgaveListe(oppgaver) {
@@ -672,7 +369,7 @@ function visOppgaveListe(oppgaver) {
   (oppgaver || []).forEach(function(o, i) {
     const div = document.createElement('div');
     div.className = 'oppgave-pill';
-    div.innerHTML = '<strong>' + brev[i] + ') ' + o.type + '</strong>' + o.instruksjon.slice(0,55) + '…';
+    div.innerHTML = '<strong>' + brev[i] + ') ' + str(o.type) + '</strong>' + str(o.instruksjon).slice(0,55) + '…';
     liste.appendChild(div);
   });
 }
