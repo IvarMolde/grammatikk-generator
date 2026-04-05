@@ -1,7 +1,4 @@
 // api/generer.js
-// Vercel serverless function – Google Gemini API med passord-autentisering
-// Samme mønster som mbo-hub
-
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -11,13 +8,11 @@ module.exports = async function handler(req, res) {
 
   const { passord, system, prompt, maxTokens } = req.body;
 
-  // Sjekk passord
   const riktigPassord = process.env.APP_PASSORD || "mbo2026";
   if (passord !== riktigPassord) {
     return res.status(401).json({ feil: "Feil passord" });
   }
 
-  // Hent API-nøkkel fra Vercel miljøvariabel
   const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ feil: "Google API-nøkkel ikke konfigurert på serveren" });
@@ -28,19 +23,15 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // Oppdatert til gemini-2.5-flash
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    // gemini-2.0-flash-lite er stabil og fungerer for alle brukere
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
 
     const svar = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: system }]
-        },
-        contents: [{
-          parts: [{ text: prompt }]
-        }],
+        system_instruction: { parts: [{ text: system }] },
+        contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           maxOutputTokens: maxTokens || 8000,
           temperature: 0.7,
@@ -57,10 +48,7 @@ module.exports = async function handler(req, res) {
 
     const data = await svar.json();
     const tekst = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!tekst) {
-      return res.status(500).json({ feil: "Tomt svar fra Gemini" });
-    }
+    if (!tekst) return res.status(500).json({ feil: "Tomt svar fra Gemini" });
 
     return res.status(200).json({ tekst });
 
