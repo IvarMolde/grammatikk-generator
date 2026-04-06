@@ -18,84 +18,132 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ feil: "Google API-nøkkel ikke konfigurert på serveren" });
   }
 
-  // Ping-sjekk (ingen tema/niva = bare passord-test)
   if (!tema || !niva) {
     return res.status(200).json({ ok: true });
   }
 
-  const prompt = `Du er en norsklærer som lager grammatikkoppgaver for voksne innvandrere på nivå ${niva}.
-Lag materiale om: ${tema}
+  // CEFR-beskrivelser og pedagogiske krav per nivå
+  const cefrProfil = {
+    "A0": {
+      beskrivelse: "Nybegynner uten norskkunnskaper. Forstår og bruker enkeltord og svært korte fraser. Setninger på maks 4-5 ord. Alltid bildestøtte og ordbank.",
+      tekstlengde: "40-60 ord",
+      setningslengde: "maks 5 ord per setning",
+      ordforrad: "kun de mest grunnleggende hverdagsord",
+      oppgavetyper: "matching, avkrysning, bildestøtte, fyll inn med ordbank",
+      grammatikk: "kun presens av være og ha, enkle substantiv"
+    },
+    "A1": {
+      beskrivelse: "Kan forstå og bruke kjente ord og svært enkle fraser om konkrete behov. Enkle setninger på 5-8 ord. Alltid ordbank i oppgavene.",
+      tekstlengde: "60-80 ord",
+      setningslengde: "5-8 ord per setning",
+      ordforrad: "grunnleggende hverdagsord om familie, mat, jobb, tid",
+      oppgavetyper: "fyll inn med ordbank, sant/usant, koble ord til definisjon",
+      grammatikk: "presens, enkle substantiv, personlige pronomen, tall"
+    },
+    "A2": {
+      beskrivelse: "Kan forstå setninger og hyppig brukte uttrykk om nære temaer. Setninger på 8-12 ord. Ordbank kan brukes, men er ikke påkrevd.",
+      tekstlengde: "80-110 ord",
+      setningslengde: "8-12 ord per setning",
+      ordforrad: "hverdagsspråk om arbeid, lokalmiljø, handel, familie",
+      oppgavetyper: "fyll inn, sant/usant, sett i rekkefølge, enkel skriveoppgave",
+      grammatikk: "presens og preteritum, V2-regelen, adjektivbøying, preposisjoner"
+    },
+    "B1": {
+      beskrivelse: "Kan forstå hovedinnholdet i klart språk om kjente emner. Setninger på 10-15 ord. Mer kompleks grammatikk og lengre tekster.",
+      tekstlengde: "110-150 ord",
+      setningslengde: "10-15 ord per setning",
+      ordforrad: "arbeidsliv, samfunn, aktuelle hendelser, mer abstrakt språk",
+      oppgavetyper: "skriveoppgave, argumentasjon, setningsanalyse, omformulering",
+      grammatikk: "perfektum, modalverb, leddsetninger, sammensatte ord"
+    },
+    "B2": {
+      beskrivelse: "Kan forstå hovedinnholdet i komplekse tekster. Setninger på 15-20 ord. Avansert grammatikk og nyansert språkbruk.",
+      tekstlengde: "150-200 ord",
+      setningslengde: "15-20 ord per setning",
+      ordforrad: "fagspråk, formelt og uformelt register, nyanser og idiomer",
+      oppgavetyper: "analyse, diskusjon, omskriving, tekstproduksjon, feilretting",
+      grammatikk: "passiv, kondisjonalis, avansert setningsbygging, register"
+    },
+    "C1": {
+      beskrivelse: "Kan uttrykke seg flytende og spontant. Setninger på 20+ ord. Komplekst og nyansert språk på linje med morsmålsbrukere.",
+      tekstlengde: "200-250 ord",
+      setningslengde: "20+ ord, komplekse setningskonstruksjoner",
+      ordforrad: "akademisk og faglig språk, idiomer, stilistiske nyanser",
+      oppgavetyper: "akademisk skriving, analyse av autentiske tekster, diskusjon",
+      grammatikk: "alle konstruksjoner inkl. stilistiske varianter og sjeldne former"
+    }
+  };
 
-Svar KUN med dette JSON-objektet. Ingen tekst før eller etter. Ingen backticks. Kun JSON:
+  const profil = cefrProfil[niva] || cefrProfil["A2"];
+
+  const prompt = `Du er en erfaren norsklærer og pedagog med ekspertise i CEFR-rammeverket. Du lager grammatikkmateriell for voksne innvandrere.
+
+NIVÅ: ${niva}
+TEMA: ${tema}
+
+CEFR-PROFIL FOR ${niva}:
+${profil.beskrivelse}
+- Tekstlengde: ${profil.tekstlengde}
+- Setningslengde: ${profil.setningslengde}
+- Ordforråd: ${profil.ordforrad}
+- Anbefalte oppgavetyper: ${profil.oppgavetyper}
+- Grammatikkfokus: ${profil.grammatikk}
+
+ABSOLUTTE KRAV TIL SPRÅKKVALITET:
+1. All norsk tekst skal følge bokmålsnormen (Bokmålsordboka, Språkrådet).
+2. Korrekt bruk av stor og liten forbokstav: stor bokstav kun etter punktum, spørsmålstegn, utropstegn og i egennavn.
+3. Korrekt tegnsetting: komma foran leddsetninger (fordi, når, som, at, hvis), punktum etter fullstendige setninger.
+4. Korrekt bøying: substantivbøying (ubestemt/bestemt entall/flertall), verbkonjugasjon, adjektivkongruens.
+5. Korrekt ordstilling: V2-regelen i helsetninger, verb sist i leddsetninger.
+6. Ingen sammenblanding av nynorsk og bokmål.
+7. Fasit MÅ stemme 100% med oppgavene – sjekk nøye at svarene er riktige.
+
+Svar KUN med dette JSON-objektet. Ingen tekst utenfor. Ingen backticks. Kun JSON:
 
 {
   "tema": "${tema}",
   "niva": "${niva}",
-  "forklaring": "Skriv 5-7 setninger som forklarer ${tema} på enkel norsk bokmål tilpasset ${niva}-nivå. Gi konkrete eksempler.",
-  "grammatikkForklaring": "Skriv 4-6 mønstre eller regler for ${tema}. Bruk bindestrek foran hvert punkt. Vis gjerne eksempler med pil (->).",
-  "lesetekst": "Skriv en naturlig norsk tekst på ca 120 ord om hverdagslivet som inneholder mange eksempler på ${tema}. Tilpass til ${niva}-nivå.",
+  "forklaring": "Skriv en pedagogisk forklaring på ${niva}-nivå om ${tema}. Bruk enkelt, korrekt bokmål. Lengde tilpasset nivå: ${profil.tekstlengde}. Gi 2-3 konkrete eksempelsetninger. Forklar regelen med egne ord slik en god lærer ville gjort det.",
+  "grammatikkForklaring": "List opp 4-6 grammatiske mønstre eller regler for ${tema}. Bruk bindestrek foran hvert punkt. Tilpass kompleksitet til ${niva}. Vis alltid eksempel etter regelen med pil (->). Eksempel format: - Regelbeskrivelse -> Eksempelsetning",
+  "lesetekst": "Skriv en sammenhengende, naturlig norsk tekst på ${profil.tekstlengde} om hverdagslivet eller arbeidslivet. Teksten skal inneholde mange eksempler på ${tema}. Tilpass vokabular og setningslengde (${profil.setningslengde}) til ${niva}. Teksten skal leses flytende og ikke virke konstruert.",
   "oppgaver": [
     {
-      "type": "Fyll inn",
-      "instruksjon": "Fyll inn riktig form i setningene. Velg fra ordene i parentes.",
-      "innhold": [
-        "1. Skriv en setning med blank relatert til ${tema}",
-        "2. Skriv en setning med blank relatert til ${tema}",
-        "3. Skriv en setning med blank relatert til ${tema}",
-        "4. Skriv en setning med blank relatert til ${tema}",
-        "5. Skriv en setning med blank relatert til ${tema}"
-      ],
+      "type": "VELG PASSENDE OPPGAVETYPE for ${niva}: ${profil.oppgavetyper}",
+      "instruksjon": "Klar og tydelig instruksjon tilpasset ${niva}-nivå. Bruk enkle ord på lavere nivåer.",
+      "innhold": ["Skriv 5 oppgavepunkter direkte relatert til ${tema}. Vanskelighetsgrad tilpasset ${niva}."],
       "skrivelinje": 0
     },
     {
-      "type": "Riktig eller galt",
-      "instruksjon": "Er setningen riktig (R) eller gal (G)? Rett de gale setningene.",
-      "innhold": [
-        "1. ___ Skriv en setning om ${tema}",
-        "2. ___ Skriv en setning om ${tema}",
-        "3. ___ Skriv en setning om ${tema}",
-        "4. ___ Skriv en setning om ${tema}",
-        "5. ___ Skriv en setning om ${tema}"
-      ],
+      "type": "VELG ANNEN PASSENDE OPPGAVETYPE",
+      "instruksjon": "Instruksjon",
+      "innhold": ["5 oppgavepunkter"],
       "skrivelinje": 0
     },
     {
-      "type": "Sett i riktig rekkefølge",
-      "instruksjon": "Sett ordene i riktig rekkefølge og skriv hele setningen.",
-      "innhold": [
-        "1. ord / ord / ord / ord",
-        "2. ord / ord / ord / ord",
-        "3. ord / ord / ord / ord",
-        "4. ord / ord / ord / ord",
-        "5. ord / ord / ord / ord"
-      ],
-      "skrivelinje": 5
+      "type": "VELG PASSENDE OPPGAVETYPE",
+      "instruksjon": "Instruksjon",
+      "innhold": ["5 oppgavepunkter"],
+      "skrivelinje": 3
     },
     {
       "type": "Skriveoppgave",
-      "instruksjon": "Skriv 5 egne setninger der du bruker ${tema} riktig. Skriv om deg selv eller hverdagen din.",
+      "instruksjon": "Tilpass skriveoppgaven til ${niva}. A0-A1: skriv 2-3 ord eller setninger. A2: skriv 3-5 setninger. B1: skriv et avsnitt. B2-C1: skriv en lengre tekst med argumentasjon.",
       "innhold": [],
-      "skrivelinje": 6
+      "skrivelinje": 5
     },
     {
-      "type": "Velg riktig alternativ",
-      "instruksjon": "Sett ring rundt riktig alternativ i parentes.",
-      "innhold": [
-        "1. Setning med (alternativ1 / alternativ2 / alternativ3)",
-        "2. Setning med (alternativ1 / alternativ2 / alternativ3)",
-        "3. Setning med (alternativ1 / alternativ2 / alternativ3)",
-        "4. Setning med (alternativ1 / alternativ2 / alternativ3)",
-        "5. Setning med (alternativ1 / alternativ2 / alternativ3)"
-      ],
+      "type": "VELG PASSENDE OPPGAVETYPE",
+      "instruksjon": "Instruksjon",
+      "innhold": ["5 oppgavepunkter"],
       "skrivelinje": 0
     }
   ],
-  "fasit": "Oppgave A: 1. svar 2. svar 3. svar 4. svar 5. svar. Oppgave B: 1. R 2. G-rettelse 3. R 4. G-rettelse 5. R. Oppgave C: 1. Korrekt setning. 2. Korrekt setning. 3. Korrekt setning. 4. Korrekt setning. 5. Korrekt setning. Oppgave D: Åpen oppgave. Oppgave E: 1. riktig 2. riktig 3. riktig 4. riktig 5. riktig",
-  "bilde1": "Skriv 2-3 engelske ord som beskriver et passende fotografi for tittelsliden. Eksempel for verb: people talking norway. Eksempel for tall: numbers blackboard school",
-  "bilde2": "Skriv 2-3 engelske ord som beskriver et passende fotografi for eksempel-siden. Eksempel for verb: writing pen paper. Eksempel for tall: math classroom students"
+  "fasit": "Oppgave A:\\n1. [korrekt svar]\\n2. [korrekt svar]\\n3. [korrekt svar]\\n4. [korrekt svar]\\n5. [korrekt svar]\\n\\nOppgave B:\\n1. [korrekt svar]\\n2. [korrekt svar]\\n3. [korrekt svar]\\n4. [korrekt svar]\\n5. [korrekt svar]\\n\\nOppgave C:\\n1. [korrekt svar]\\n2. [korrekt svar]\\n3. [korrekt svar]\\n4. [korrekt svar]\\n5. [korrekt svar]\\n\\nOppgave D: Åpen oppgave – se vurderingskriterier i lærerveiledning.\\n\\nOppgave E:\\n1. [korrekt svar]\\n2. [korrekt svar]\\n3. [korrekt svar]\\n4. [korrekt svar]\\n5. [korrekt svar]",
+  "bilde1": "2-3 engelske ord for et relevant fotografi til tittelsliden for temaet ${tema}",
+  "bilde2": "2-3 engelske ord for et relevant fotografi til eksempelsliden for temaet ${tema}"
 }
 
-VIKTIG: Erstatt alle plassholdertekster med ekte innhold om ${tema} på ${niva}-nivå. Fasit må stemme med oppgavene du skriver.`;
+VIKTIG: Erstatt ALLE plassholdertekster med ekte, korrekt norsk innhold. Tilpass ALT til ${niva}-nivå. Kontroller at fasit stemmer med oppgavene.`;
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
@@ -107,7 +155,7 @@ VIKTIG: Erstatt alle plassholdertekster med ekte innhold om ${tema} på ${niva}-
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           maxOutputTokens: 8000,
-          temperature: 0.5,
+          temperature: 0.4,
           responseMimeType: "application/json"
         }
       })
@@ -124,12 +172,10 @@ VIKTIG: Erstatt alle plassholdertekster med ekte innhold om ${tema} på ${niva}-
     const tekst = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!tekst) return res.status(500).json({ feil: "Tomt svar fra Gemini" });
 
-    // Parse JSON direkte
     try {
       const innhold = JSON.parse(tekst);
       return res.status(200).json({ innhold });
     } catch (parseErr) {
-      // Prøv å rense og parse på nytt
       let renset = tekst.trim();
       renset = renset.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '').trim();
       const start = renset.indexOf('{');
