@@ -129,8 +129,8 @@ async function lagPresentasjon(data, unsplashKey) {
   var forklaringSetninger = forklaring
     .split(/(?<=[.!?])\s+/)
     .filter(function(s) { return s.trim().length > 10; });
-  var kjerneregel = k(forklaringSetninger[0] || forklaring, 160);
-  var tilleggsregel = k((forklaringSetninger[1] || ""), 160);
+  var kjerneregel = (forklaringSetninger[0] || forklaring).toString();
+  var tilleggsregel = (forklaringSetninger[1] || "").toString();
 
   var pres = new pptxgen();
   pres.layout = "LAYOUT_16x9";
@@ -236,22 +236,22 @@ async function lagPresentasjon(data, unsplashKey) {
   });
 
   // Stor regelkort
-  s3.addShape(pres.shapes.RECTANGLE, { x: 0.4, y: 1.15, w: 9.2, h: 1.65, fill: { color: C.white }, line: { color: C.accent, pt: 3 }, shadow: mk() });
-  s3.addShape(pres.shapes.RECTANGLE, { x: 0.4, y: 1.15, w: 0.18, h: 1.65, fill: { color: C.accent }, line: { color: C.accent } });
+  s3.addShape(pres.shapes.RECTANGLE, { x: 0.4, y: 1.15, w: 9.2, h: 1.85, fill: { color: C.white }, line: { color: C.accent, pt: 3 }, shadow: mk() });
+  s3.addShape(pres.shapes.RECTANGLE, { x: 0.4, y: 1.15, w: 0.18, h: 1.85, fill: { color: C.accent }, line: { color: C.accent } });
   s3.addText(kjerneregel, {
-    x: 0.72, y: 1.22, w: 8.75, h: 1.5,
-    fontSize: 19, color: C.textDark, fontFace: "Calibri",
-    align: "left", valign: "middle"
+    x: 0.72, y: 1.22, w: 8.75, h: 1.7,
+    fontSize: 18, color: C.textDark, fontFace: "Calibri",
+    align: "left", valign: "middle", wrap: true
   });
 
   // Tilleggsregel / husk-boks
   if (tilleggsregel.length > 10) {
-    s3.addShape(pres.shapes.RECTANGLE, { x: 0.4, y: 3.0, w: 9.2, h: 1.5, fill: { color: C.lightAmber }, line: { color: C.amber, pt: 2 } });
-    s3.addText("💡", { x: 0.55, y: 3.05, w: 0.6, h: 1.4, fontSize: 28, fontFace: "Calibri", valign: "middle", align: "center" });
+    s3.addShape(pres.shapes.RECTANGLE, { x: 0.4, y: 3.1, w: 9.2, h: 1.9, fill: { color: C.lightAmber }, line: { color: C.amber, pt: 2 } });
+    s3.addText("💡", { x: 0.55, y: 3.15, w: 0.6, h: 1.8, fontSize: 28, fontFace: "Calibri", valign: "middle", align: "center" });
     s3.addText(tilleggsregel, {
-      x: 1.2, y: 3.08, w: 8.2, h: 1.4,
-      fontSize: 16, color: "6B4F00", fontFace: "Calibri",
-      align: "left", valign: "middle"
+      x: 1.2, y: 3.18, w: 8.2, h: 1.72,
+      fontSize: 15, color: "6B4F00", fontFace: "Calibri",
+      align: "left", valign: "top", wrap: true
     });
   }
 
@@ -276,24 +276,24 @@ async function lagPresentasjon(data, unsplashKey) {
   var eksBorderFarger = [C.green, C.green, C.green, C.green];
 
   gramLinjer.forEach(function(ex, i) {
-    var y = 1.15 + i * 1.08;
+    var y = 1.1 + i * 1.18;
     // Del på pil hvis den finnes
     var deler = ex.split(/\s*->\s*/);
-    var regel = deler[0] ? k(deler[0].trim(), 55) : "";
-    var eks   = deler[1] ? k(deler[1].trim(), 55) : "";
+    var regel = deler[0] ? deler[0].trim() : "";
+    var eks   = deler[1] ? deler[1].trim() : "";
 
     s4.addShape(pres.shapes.RECTANGLE, {
-      x: 0.3, y: y, w: eksW, h: 0.95,
+      x: 0.3, y: y, w: eksW, h: 1.1,
       fill: { color: eksFarger[i] || C.lightGreen },
       line: { color: eksBorderFarger[i] || C.green, pt: 1.5 }
     });
 
     if (eks) {
       // Regel liten øverst, eksempel stort nederst
-      s4.addText(regel, { x: 0.5, y: y + 0.04, w: eksW - 0.3, h: 0.38, fontSize: 12, color: C.textMid, fontFace: "Calibri", italic: true });
-      s4.addText(eks,   { x: 0.5, y: y + 0.44, w: eksW - 0.3, h: 0.44, fontSize: 15, bold: true, color: C.green, fontFace: "Calibri" });
+      s4.addText(regel, { x: 0.5, y: y + 0.04, w: eksW - 0.3, h: 0.42, fontSize: 12, color: C.textMid, fontFace: "Calibri", italic: true, wrap: true });
+      s4.addText(eks,   { x: 0.5, y: y + 0.5,  w: eksW - 0.3, h: 0.52, fontSize: 15, bold: true, color: C.green, fontFace: "Calibri", wrap: true });
     } else {
-      s4.addText(regel, { x: 0.5, y: y + 0.15, w: eksW - 0.3, h: 0.65, fontSize: 15, color: C.textDark, fontFace: "Calibri", valign: "middle" });
+      s4.addText(regel, { x: 0.5, y: y + 0.1, w: eksW - 0.3, h: 0.9, fontSize: 15, color: C.textDark, fontFace: "Calibri", valign: "middle", wrap: true });
     }
   });
 
@@ -325,7 +325,7 @@ async function lagPresentasjon(data, unsplashKey) {
   });
 
   // Tekst i stor, lesbar font – IKKE for mye
-  var kortLesetekst = k(lesetekst.replace(/\n+/g, " "), 480);
+  var kortLesetekst = lesetekst.replace(/\n+/g, " ").toString();
   s5.addShape(pres.shapes.RECTANGLE, { x: 0.4, y: 1.15, w: 9.2, h: 4.1, fill: { color: C.white }, line: { color: "E0D080", pt: 2 }, shadow: mk() });
   s5.addText(kortLesetekst, {
     x: 0.65, y: 1.3, w: 8.7, h: 3.75,
@@ -352,29 +352,69 @@ async function lagPresentasjon(data, unsplashKey) {
   var oppgLys    = [C.light,  C.lightGreen, C.lightLilla, C.lightRed, C.lightAmber];
   var brev       = ["A","B","C","D","E"];
 
-  oppgaver.slice(0, 5).forEach(function(oppg, i) {
-    var col = i < 3 ? 0 : 1;
-    var row = i < 3 ? i : i - 3;
-    var x   = col === 0 ? 0.3 : 5.2;
-    var y   = 1.15 + row * 1.42;
-    var w   = 4.65;
-    var h   = 1.25;
+  // Full bredde, 2-kolonne layout: A+B venstre, C+D høyre, E full bredde
+  // Hver boks er høy nok til at instruksjonsteksten alltid får plass
+  var oppgLayout = [
+    { x: 0.3,  y: 1.15, w: 4.65, h: 1.9 },   // A
+    { x: 0.3,  y: 3.15, w: 4.65, h: 1.9 },   // B – under A
+    { x: 5.15, y: 1.15, w: 4.65, h: 1.9 },   // C
+    { x: 5.15, y: 3.15, w: 4.65, h: 1.9 },   // D – under C
+    { x: 0.3,  y: 1.15, w: 9.5,  h: 1.9 }    // E – brukes ikke som 5. kort, se under
+  ];
+
+  // Bruk 2x2 grid + eventuell femte full-bredde
+  var antall = Math.min(oppgaver.length, 5);
+  var layout4 = [
+    { x: 0.3,  y: 1.15, w: 4.65 },
+    { x: 0.3,  y: 3.18, w: 4.65 },
+    { x: 5.15, y: 1.15, w: 4.65 },
+    { x: 5.15, y: 3.18, w: 4.65 },
+    { x: 0.3,  y: 1.15, w: 9.5  }
+  ];
+  // Beregn høyde basert på antall oppgaver
+  var radH = antall <= 4 ? 2.05 : 1.9;
+
+  oppgaver.slice(0, 4).forEach(function(oppg, i) {
+    var pos = layout4[i];
+    var x = pos.x, y = pos.y, w = pos.w, h = radH;
 
     s6.addShape(pres.shapes.RECTANGLE, { x: x, y: y, w: w, h: h, fill: { color: oppgLys[i] }, line: { color: oppgFarger[i], pt: 1.5 }, shadow: mk() });
     // Farget venstrestolpe med bokstav
-    s6.addShape(pres.shapes.RECTANGLE, { x: x, y: y, w: 0.5, h: h, fill: { color: oppgFarger[i] }, line: { color: oppgFarger[i] } });
-    s6.addText(brev[i], { x: x, y: y, w: 0.5, h: h, fontSize: 22, bold: true, color: C.white, fontFace: "Calibri", align: "center", valign: "middle", margin: 0 });
-    // Oppgavetype
-    s6.addText(k(oppg.type || "", 32), {
-      x: x + 0.6, y: y + 0.07, w: w - 0.7, h: 0.44,
+    s6.addShape(pres.shapes.RECTANGLE, { x: x, y: y, w: 0.52, h: h, fill: { color: oppgFarger[i] }, line: { color: oppgFarger[i] } });
+    s6.addText(brev[i], { x: x, y: y, w: 0.52, h: h, fontSize: 22, bold: true, color: C.white, fontFace: "Calibri", align: "center", valign: "middle", margin: 0 });
+    // Oppgavetype – ingen kapping
+    s6.addText((oppg.type || "").toString(), {
+      x: x + 0.62, y: y + 0.1, w: w - 0.72, h: 0.48,
       fontSize: 14, bold: true, color: oppgFarger[i], fontFace: "Calibri", valign: "middle"
     });
-    // Instruksjon
-    s6.addText(k(oppg.instruksjon || "", 70), {
-      x: x + 0.6, y: y + 0.54, w: w - 0.7, h: 0.62,
-      fontSize: 11, color: C.textMid, fontFace: "Calibri", valign: "top"
+    // Instruksjon – full tekst, ingen kapping, wrap automatisk
+    s6.addText((oppg.instruksjon || "").toString(), {
+      x: x + 0.62, y: y + 0.62, w: w - 0.72, h: h - 0.72,
+      fontSize: 12, color: C.textMid, fontFace: "Calibri", valign: "top",
+      wrap: true, paraSpaceAfter: 2
     });
   });
+
+  // Hvis 5 oppgaver: legg E som egen rad under
+  if (oppgaver.length >= 5) {
+    var oppg5 = oppgaver[4];
+    var y5 = 1.15 + radH * 2 + 0.08;
+    // Sjekk om det er plass – hvis ikke, reduser høyde
+    var h5 = Math.min(H - y5 - 0.1, 1.1);
+    if (h5 > 0.5) {
+      s6.addShape(pres.shapes.RECTANGLE, { x: 0.3, y: y5, w: 9.5, h: h5, fill: { color: oppgLys[4] }, line: { color: oppgFarger[4], pt: 1.5 } });
+      s6.addShape(pres.shapes.RECTANGLE, { x: 0.3, y: y5, w: 0.52, h: h5, fill: { color: oppgFarger[4] }, line: { color: oppgFarger[4] } });
+      s6.addText("E", { x: 0.3, y: y5, w: 0.52, h: h5, fontSize: 22, bold: true, color: C.white, fontFace: "Calibri", align: "center", valign: "middle", margin: 0 });
+      s6.addText((oppg5.type || "").toString(), {
+        x: 0.92, y: y5 + 0.08, w: 4.0, h: 0.44,
+        fontSize: 14, bold: true, color: oppgFarger[4], fontFace: "Calibri", valign: "middle"
+      });
+      s6.addText((oppg5.instruksjon || "").toString(), {
+        x: 0.92, y: y5 + 0.55, w: 8.7, h: h5 - 0.6,
+        fontSize: 12, color: C.textMid, fontFace: "Calibri", valign: "top", wrap: true
+      });
+    }
+  }
 
   s6.addNotes("OPPGAVER\n\nFØR elevene begynner:\n– Gå gjennom instruksjonen for oppgave A høyt\n– Gjør det første eksemplet på tavlen\n– Sjekk at alle forstår\n\nUnderveis: Gå rundt, hjelp, noter typiske feil\nEtter: Gå gjennom fasit i plenum");
 
