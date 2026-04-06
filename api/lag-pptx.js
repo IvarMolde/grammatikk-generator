@@ -71,6 +71,9 @@ function velgSokeord(tema) {
 }
 
 async function lagPresentasjon(data, unsplashKey) {
+  // Bruk Gemini-genererte sokeord hvis tilgjengelig
+  var sokeord1 = data.bilde1 || velgSokeord(data.tema || "");
+  var sokeord2 = data.bilde2 || "norway classroom students learning";
   const tema = data.tema || "";
   const niva = data.niva || "";
   const forklaring = data.forklaring || "";
@@ -84,8 +87,8 @@ async function lagPresentasjon(data, unsplashKey) {
   if (unsplashKey) {
     console.log("Henter bilder fra Unsplash...");
     var res = await Promise.all([
-      hentBildeBase64(velgSokeord(tema), unsplashKey),
-      hentBildeBase64("norway classroom students", unsplashKey)
+      hentBildeBase64(sokeord1, unsplashKey),
+      hentBildeBase64(sokeord2, unsplashKey)
     ]);
     bilde1 = res[0];
     bilde2 = res[1];
