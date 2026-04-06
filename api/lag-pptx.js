@@ -29,8 +29,8 @@ async function hentBildeBase64(sokeord, apiKey) {
     }
 
     const json = await resp.json();
-    // Bruk small-URL - bedre opplosning
-    const url = json.urls && json.urls.small || json.urls.thumb;
+    // Bruk regular-URL - god kvalitet (1080px)
+    const url = json.urls && (json.urls.regular || json.urls.small);
     if (!url) { console.error("Ingen URL i svar"); return null; }
 
     // Last ned bildet
