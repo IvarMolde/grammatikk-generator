@@ -90,7 +90,9 @@ Svar KUN med dette JSON-objektet. Ingen tekst før eller etter. Ingen backticks.
       "skrivelinje": 0
     }
   ],
-  "fasit": "Oppgave A: 1. svar 2. svar 3. svar 4. svar 5. svar. Oppgave B: 1. R 2. G-rettelse 3. R 4. G-rettelse 5. R. Oppgave C: 1. Korrekt setning. 2. Korrekt setning. 3. Korrekt setning. 4. Korrekt setning. 5. Korrekt setning. Oppgave D: Åpen oppgave. Oppgave E: 1. riktig 2. riktig 3. riktig 4. riktig 5. riktig"
+  "fasit": "Oppgave A: 1. svar 2. svar 3. svar 4. svar 5. svar. Oppgave B: 1. R 2. G-rettelse 3. R 4. G-rettelse 5. R. Oppgave C: 1. Korrekt setning. 2. Korrekt setning. 3. Korrekt setning. 4. Korrekt setning. 5. Korrekt setning. Oppgave D: Åpen oppgave. Oppgave E: 1. riktig 2. riktig 3. riktig 4. riktig 5. riktig",
+  "bilde1": "Skriv 2-3 engelske ord som beskriver et passende fotografi for tittelsliden. Eksempel for verb: people talking norway. Eksempel for tall: numbers blackboard school",
+  "bilde2": "Skriv 2-3 engelske ord som beskriver et passende fotografi for eksempel-siden. Eksempel for verb: writing pen paper. Eksempel for tall: math classroom students"
 }
 
 VIKTIG: Erstatt alle plassholdertekster med ekte innhold om ${tema} på ${niva}-nivå. Fasit må stemme med oppgavene du skriver.`;
