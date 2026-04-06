@@ -54,7 +54,7 @@ grammatikk-generator/
 ## API-nøkkel
 
 Hent nøkkel på: **aistudio.google.com/app/api-keys**
-Nøkkelen starter med `AIza...`
+Nøkkelen starter med `AIza...` 
 
 ---
 
