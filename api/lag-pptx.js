@@ -353,60 +353,58 @@ async function lagPresentasjon(data, unsplashKey) {
   var brev        = ["A","B","C","D","E"];
   var antallOppg  = Math.min(oppgaver.length, 5);
 
-  // Dynamisk 2-kolonne layout – beregn høyder først
-  var kolW = (W - MARGIN * 3) / 2; // to kolonner med margin
-  var titleFs6 = 14, innholdFs6 = 12;
-  var innerW6 = kolW - 0.52 - 0.25;
+  // STRATEGI: Del tilgjengelig høyde likt mellom rader
+  // Venstre: A, B, (C hvis odde antall)  Høyre: C/D, D/E
+  var kolW = (W - MARGIN * 3) / 2;
+  var radAntall = Math.ceil(antallOppg / 2);
+  var radH = (CONTENT_H - (radAntall - 1) * 0.1) / radAntall;
+  radH = Math.max(radH, 0.9);
 
-  var hoyder = oppgaver.slice(0, antallOppg).map(function(oppg) {
-    var tH = estimerTekstH(str(oppg.type), innerW6, titleFs6);
-    var iH = estimerTekstH(str(oppg.instruksjon), innerW6, innholdFs6);
-    return Math.max(tH + iH + 0.45, 1.0);
-  });
-
-  // Fordel på kolonner: A+B venstre, C+D høyre, E full bredde
-  var yVenstre = CONTENT_TOP, yHoyre = CONTENT_TOP;
   oppgaver.slice(0, antallOppg).forEach(function(oppg, i) {
-    var h = hoyder[i];
-    var isFullBredde = (antallOppg === 5 && i === 4);
-    var x, y, w6;
-
-    if (isFullBredde) {
-      x = MARGIN; y = Math.max(yVenstre, yHoyre) + 0.1;
-      w6 = W - MARGIN * 2;
-    } else if (i % 2 === 0) {
-      // Venstre kolonne: A, C (evt E)
-      x = MARGIN; y = yVenstre; w6 = kolW;
-    } else {
-      // Høyre kolonne: B, D
-      x = MARGIN * 2 + kolW; y = yHoyre; w6 = kolW;
+    var col, row;
+    // Layout: A=venstre rad 0, B=høyre rad 0, C=venstre rad 1, D=høyre rad 1, E=full rad 2
+    if (antallOppg === 5 && i === 4) {
+      // E: full bredde nederst
+      var x5 = MARGIN;
+      var y5 = CONTENT_TOP + 2 * (radH + 0.1);
+      var h5 = H - y5 - 0.08;
+      if (h5 < 0.5) return;
+      var iW5 = W - MARGIN * 2 - 0.52 - 0.15;
+      s6.addShape(pres.shapes.RECTANGLE, { x: x5, y: y5, w: W - MARGIN * 2, h: h5,
+        fill: { color: oppgLys[4] }, line: { color: oppgFarger[4], pt: 1.5 } });
+      s6.addShape(pres.shapes.RECTANGLE, { x: x5, y: y5, w: 0.52, h: h5,
+        fill: { color: oppgFarger[4] }, line: { color: oppgFarger[4] } });
+      s6.addText("E", { x: x5, y: y5, w: 0.52, h: h5,
+        fontSize: 22, bold: true, color: C.white, fontFace: "Calibri", align: "center", valign: "middle", margin: 0 });
+      s6.addText(str(oppg.type), { x: x5 + 0.62, y: y5 + 0.08, w: iW5, h: 0.38,
+        fontSize: 14, bold: true, color: oppgFarger[4], fontFace: "Calibri", valign: "middle", wrap: true });
+      s6.addText(str(oppg.instruksjon), { x: x5 + 0.62, y: y5 + 0.5, w: iW5, h: h5 - 0.55,
+        fontSize: 12, color: C.textMid, fontFace: "Calibri", valign: "top", wrap: true });
+      return;
     }
+    col = i % 2;
+    row = Math.floor(i / 2);
+    var x = col === 0 ? MARGIN : MARGIN * 2 + kolW;
+    var y = CONTENT_TOP + row * (radH + 0.1);
+    var iW = kolW - 0.52 - 0.15;
 
-    // Ikke tegn utenfor sliden
-    if (y + h > H - 0.08) return;
-
-    var innerW = w6 - 0.52 - 0.25;
-
-    s6.addShape(pres.shapes.RECTANGLE, { x: x, y: y, w: w6, h: h,
+    s6.addShape(pres.shapes.RECTANGLE, { x: x, y: y, w: kolW, h: radH,
       fill: { color: oppgLys[i] }, line: { color: oppgFarger[i], pt: 1.5 }, shadow: mk() });
-    s6.addShape(pres.shapes.RECTANGLE, { x: x, y: y, w: 0.52, h: h,
+    s6.addShape(pres.shapes.RECTANGLE, { x: x, y: y, w: 0.52, h: radH,
       fill: { color: oppgFarger[i] }, line: { color: oppgFarger[i] } });
-    s6.addText(brev[i], { x: x, y: y, w: 0.52, h: h,
+    s6.addText(brev[i], { x: x, y: y, w: 0.52, h: radH,
       fontSize: 22, bold: true, color: C.white, fontFace: "Calibri", align: "center", valign: "middle", margin: 0 });
 
-    var tH = estimerTekstH(str(oppg.type), innerW, titleFs6);
-    s6.addText(str(oppg.type), { x: x + 0.62, y: y + 0.1, w: innerW, h: tH,
-      fontSize: titleFs6, bold: true, color: oppgFarger[i], fontFace: "Calibri", valign: "top", wrap: true });
-    s6.addText(str(oppg.instruksjon), { x: x + 0.62, y: y + tH + 0.18, w: innerW, h: h - tH - 0.28,
-      fontSize: innholdFs6, color: C.textMid, fontFace: "Calibri", valign: "top", wrap: true });
-
-    if (isFullBredde) {
-      // ingenting
-    } else if (i % 2 === 0) {
-      yVenstre = y + h + 0.12;
-    } else {
-      yHoyre = y + h + 0.12;
-    }
+    // Type-tittel: fast høyde
+    var tittelH = 0.4;
+    s6.addText(str(oppg.type), {
+      x: x + 0.62, y: y + 0.08, w: iW, h: tittelH,
+      fontSize: 14, bold: true, color: oppgFarger[i], fontFace: "Calibri", valign: "middle", wrap: true });
+    // Instruksjon: resten av boksen – alltid hele teksten, font skalerer ned om nødvendig
+    s6.addText(str(oppg.instruksjon), {
+      x: x + 0.62, y: y + tittelH + 0.15, w: iW, h: radH - tittelH - 0.2,
+      fontSize: 12, color: C.textMid, fontFace: "Calibri", valign: "top", wrap: true,
+      shrinkText: true });
   });
   s6.addNotes("OPPGAVER\nFØR elevene begynner: Gå gjennom instruksjonen for oppgave A høyt og gjør første eksempel på tavlen.\nUnderveis: Gå rundt, hjelp, noter typiske feil.\nEtter: Gå gjennom fasit i plenum.");
 
