@@ -4,230 +4,326 @@ const pptxgen = require("pptxgenjs");
 const C = {
   primary: "1F4E79", accent: "2E75B6", light: "D6E4F0",
   white: "FFFFFF", dark: "1A2744", green: "2C6E49",
-  lightGreen: "D8F3DC", yellow: "FFF3CD",
-  textDark: "1A1A2E", textMid: "444466", amber: "E9A800",
+  lightGreen: "D8F3DC", amber: "E9A800", red: "C84B31",
+  lightRed: "FFE4DE", lilla: "7B5EA7", lightLilla: "F0EBF8",
+  textDark: "1A1A2E", textMid: "444466", gray: "F5F7FA"
 };
 const W = 10, H = 5.625;
-const mk = () => ({ type: "outer", blur: 8, offset: 3, angle: 135, color: "000000", opacity: 0.12 });
+const mk = () => ({ type: "outer", blur: 10, offset: 3, angle: 135, color: "000000", opacity: 0.10 });
 
-// Hent bilde som base64 - bruker Unsplash API
-async function hentBildeBase64(sokeord, apiKey) {
+// Hent bilde som base64
+async function hentBilde(sokeord, apiKey) {
   try {
-    // Hent bilde-URL fra Unsplash API
     const apiUrl = "https://api.unsplash.com/photos/random?query="
       + encodeURIComponent(sokeord)
       + "&orientation=landscape&client_id=" + apiKey;
-
-    const ctrl = new AbortController();
-    const timer = setTimeout(function() { ctrl.abort(); }, 7000);
-    const resp = await fetch(apiUrl, { signal: ctrl.signal });
-    clearTimeout(timer);
-
-    if (!resp.ok) {
-      console.error("Unsplash API feil " + resp.status + " for: " + sokeord);
-      return null;
-    }
-
-    const json = await resp.json();
-    // Bruk regular-URL - god kvalitet (1080px)
+    const c1 = new AbortController();
+    const t1 = setTimeout(function() { c1.abort(); }, 7000);
+    const r1 = await fetch(apiUrl, { signal: c1.signal });
+    clearTimeout(t1);
+    if (!r1.ok) { console.error("Unsplash feil " + r1.status); return null; }
+    const json = await r1.json();
     const url = json.urls && (json.urls.regular || json.urls.small);
-    if (!url) { console.error("Ingen URL i svar"); return null; }
-
-    // Last ned bildet
-    const ctrl2 = new AbortController();
-    const timer2 = setTimeout(function() { ctrl2.abort(); }, 10000);
-    const imgResp = await fetch(url, { signal: ctrl2.signal });
-    clearTimeout(timer2);
-
-    if (!imgResp.ok) { console.error("Bilde-nedlasting feil: " + imgResp.status); return null; }
-
-    const buf = await imgResp.arrayBuffer();
-    const b64 = Buffer.from(buf).toString("base64");
-    console.log("Bilde hentet OK for: " + sokeord + " (" + buf.byteLength + " bytes)");
-    return "image/jpeg;base64," + b64;
-
+    if (!url) return null;
+    const c2 = new AbortController();
+    const t2 = setTimeout(function() { c2.abort(); }, 12000);
+    const r2 = await fetch(url, { signal: c2.signal });
+    clearTimeout(t2);
+    if (!r2.ok) return null;
+    const buf = await r2.arrayBuffer();
+    console.log("Bilde OK: " + sokeord);
+    return "image/jpeg;base64," + Buffer.from(buf).toString("base64");
   } catch (e) {
-    console.error("hentBildeBase64 feil: " + e.message);
+    console.error("Bilde feil: " + e.message);
     return null;
   }
 }
 
-// Velg sokeord basert pa tema
-function velgSokeord(tema) {
-  const t = tema.toLowerCase();
-  if (t.includes("verb"))        return "people working";
-  if (t.includes("substantiv"))  return "objects table";
-  if (t.includes("adjektiv"))    return "colorful nature";
-  if (t.includes("setning"))     return "writing notebook";
-  if (t.includes("pronomen"))    return "people talking";
-  if (t.includes("preposisjon")) return "map direction";
-  if (t.includes("konjunksjon")) return "bridge";
-  if (t.includes("tall"))        return "numbers";
-  if (t.includes("tid"))         return "clock";
-  if (t.includes("passiv"))      return "classroom";
-  if (t.includes("modal"))       return "crossroads choice";
-  if (t.includes("imperativ"))   return "sign road";
-  return "norway school learning";
+// Hjelpefunksjoner
+function bold(tekst, size, color) {
+  return [{ text: tekst, options: { bold: true, fontSize: size || 18, color: color || C.textDark, fontFace: "Calibri" } }];
+}
+
+function kortTekst(tekst, maks) {
+  if (!tekst) return "";
+  return tekst.length > maks ? tekst.slice(0, maks - 1) + "…" : tekst;
+}
+
+function splittILinjer(tekst, maks) {
+  if (!tekst) return [];
+  // Del opp på punktum eller newline, ta maks N setninger
+  var linjer = tekst.split(/\n|(?<=\.)\s+/).filter(function(l) { return l.trim().length > 3; });
+  return linjer.slice(0, maks);
+}
+
+// Lag en ikonsirkel (farget sirkel med tall/bokstav)
+function leggTilIkon(slide, x, y, r, farge, tekst) {
+  slide.addShape(slide._pptx ? slide._pptx.shapes.OVAL : "ellipse", { x: x - r, y: y - r, w: r*2, h: r*2, fill: { color: farge }, line: { color: farge } });
+  if (tekst) {
+    slide.addText(tekst, { x: x - r, y: y - r * 1.1, w: r*2, h: r*2.2, fontSize: 14, bold: true, color: C.white, fontFace: "Calibri", align: "center", valign: "middle" });
+  }
 }
 
 async function lagPresentasjon(data, unsplashKey) {
-  // Bruk Gemini-genererte sokeord hvis tilgjengelig
-  var sokeord1 = data.bilde1 || velgSokeord(data.tema || "");
-  var sokeord2 = data.bilde2 || "norway classroom students learning";
   const tema = data.tema || "";
   const niva = data.niva || "";
   const forklaring = data.forklaring || "";
   const grammatikkForklaring = data.grammatikkForklaring || "";
   const lesetekst = data.lesetekst || "";
   const oppgaver = data.oppgaver || [];
+  const sokeord1 = data.bilde1 || "language learning norway";
+  const sokeord2 = data.bilde2 || "classroom students";
 
-  // Hent bilder
-  var bilde1 = null;
-  var bilde2 = null;
+  var bilde1 = null, bilde2 = null;
   if (unsplashKey) {
-    console.log("Henter bilder fra Unsplash...");
     var res = await Promise.all([
-      hentBildeBase64(sokeord1, unsplashKey),
-      hentBildeBase64(sokeord2, unsplashKey)
+      hentBilde(sokeord1, unsplashKey),
+      hentBilde(sokeord2, unsplashKey)
     ]);
     bilde1 = res[0];
     bilde2 = res[1];
-    console.log("bilde1: " + (bilde1 ? "OK" : "FEILET"));
-    console.log("bilde2: " + (bilde2 ? "OK" : "FEILET"));
-  } else {
-    console.log("Ingen UNSPLASH_ACCESS_KEY konfigurert");
   }
 
   const pres = new pptxgen();
   pres.layout = "LAYOUT_16x9";
-  pres.title = tema + " – Niva " + niva;
+  pres.title = tema + " – Nivå " + niva;
+  pres.author = "Molde voksenopplæringssenter";
 
-  // ── Slide 1: Tittel ──
+  // ══════════════════════════════════════
+  // SLIDE 1: TITTEL – visuell impact
+  // ══════════════════════════════════════
   var s1 = pres.addSlide();
-
   if (bilde1) {
-    s1.addImage({ data: bilde1, x: 0, y: 0, w: W * 0.5, h: H, sizing: { type: "cover", w: W * 0.5, h: H } });
-    s1.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W * 0.5, h: H, fill: { color: C.primary, transparency: 40 }, line: { color: C.primary, transparency: 40 } });
+    // Fullt bilde i bakgrunn med mørk overlay
+    s1.addImage({ data: bilde1, x: 0, y: 0, w: W, h: H, sizing: { type: "cover", w: W, h: H } });
+    s1.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: H, fill: { color: "000000", transparency: 45 }, line: { color: "000000", transparency: 45 } });
   } else {
-    // Fallback: gradient-effekt med to rektangler
-    s1.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W * 0.5, h: H, fill: { color: "1A5C9A" }, line: { color: "1A5C9A" } });
-    s1.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W * 0.5, h: H * 0.5, fill: { color: "2470B8", transparency: 30 }, line: { color: "2470B8", transparency: 30 } });
+    s1.background = { color: C.primary };
   }
+  // Gul toppstripe
+  s1.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 0.1, fill: { color: C.amber }, line: { color: C.amber } });
+  // Nivå-badge
+  s1.addShape(pres.shapes.RECTANGLE, { x: 0.55, y: 0.9, w: 1.4, h: 0.5, fill: { color: C.amber }, line: { color: C.amber } });
+  s1.addText("Nivå " + niva, { x: 0.55, y: 0.9, w: 1.4, h: 0.5, fontSize: 16, bold: true, color: C.dark, fontFace: "Calibri", align: "center", valign: "middle", margin: 0 });
+  // Tittel – stor og tydelig
+  s1.addText(tema, {
+    x: 0.5, y: 1.6, w: 9.0, h: 2.4,
+    fontSize: 52, bold: true, color: C.white, fontFace: "Calibri",
+    align: "left", valign: "middle"
+  });
+  // Institusjon
+  s1.addText("Molde voksenopplæringssenter – MBO", {
+    x: 0.5, y: 4.6, w: 9.0, h: 0.4,
+    fontSize: 13, color: "CCDDEE", fontFace: "Calibri", align: "left"
+  });
+  s1.addShape(pres.shapes.RECTANGLE, { x: 0, y: H - 0.1, w: W, h: 0.1, fill: { color: C.accent }, line: { color: C.accent } });
+  s1.addNotes("Tittelslide: " + tema + " – Nivå " + niva + ".\nAktivering: Spør elevene – 'Hva vet dere om dette fra før?' La 2-3 elever svare. Skriv nøkkelord på tavlen.");
 
-  s1.addShape(pres.shapes.RECTANGLE, { x: W * 0.5, y: 0, w: W * 0.5, h: H, fill: { color: C.primary }, line: { color: C.primary } });
-  s1.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 0.07, fill: { color: C.amber }, line: { color: C.amber } });
-  s1.addShape(pres.shapes.RECTANGLE, { x: 0, y: H - 0.07, w: W, h: 0.07, fill: { color: C.accent }, line: { color: C.accent } });
-  s1.addText(tema, { x: W * 0.5 + 0.3, y: 1.1, w: W * 0.46, h: 2.1, fontSize: 34, bold: true, color: C.white, fontFace: "Calibri", align: "left", valign: "middle" });
-  s1.addShape(pres.shapes.RECTANGLE, { x: W * 0.5 + 0.3, y: 3.3, w: 1.9, h: 0.58, fill: { color: C.amber }, line: { color: C.amber } });
-  s1.addText("Niva " + niva, { x: W * 0.5 + 0.3, y: 3.3, w: 1.9, h: 0.58, fontSize: 18, bold: true, color: C.dark, fontFace: "Calibri", align: "center", valign: "middle", margin: 0 });
-  s1.addText("Molde voksenopplaringssenter - MBO", { x: W * 0.5 + 0.3, y: 4.1, w: W * 0.46, h: 0.4, fontSize: 11, color: "A0B8D8", fontFace: "Calibri" });
-  s1.addNotes("Tittelslide: " + tema + " – Niva " + niva + ". Spor elevene hva de vet om dette grammatikktemaet.");
-
-  // ── Slide 2: Laeringsmal ──
+  // ══════════════════════════════════════
+  // SLIDE 2: LÆRINGSMÅL – maks 3 mål, store og tydelige
+  // ══════════════════════════════════════
   var s2 = pres.addSlide();
   s2.background = { color: C.white };
-  s2.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 0.12, h: H, fill: { color: C.primary }, line: { color: C.primary } });
-  s2.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 0.08, fill: { color: C.primary }, line: { color: C.primary } });
-  s2.addText("Laeringsmal", { x: 0.3, y: 0.18, w: 9.4, h: 0.7, fontSize: 28, bold: true, color: C.primary, fontFace: "Calibri" });
-  s2.addShape(pres.shapes.RECTANGLE, { x: 0.3, y: 1.1, w: 9.3, h: 3.9, fill: { color: C.light }, line: { color: C.accent, pt: 1 }, shadow: mk() });
-  s2.addText([
-    { text: "Etter denne leksjonen kan jeg:", options: { bold: true, breakLine: true, fontSize: 17 } },
-    { text: " ", options: { breakLine: true } },
-    { text: "  *  Forklare hva " + tema + " er", options: { breakLine: true, fontSize: 15 } },
-    { text: "  *  Gjenkjenne " + tema + " i tekster", options: { breakLine: true, fontSize: 15 } },
-    { text: "  *  Lage egne setninger med riktig bruk", options: { breakLine: true, fontSize: 15 } },
-    { text: "  *  Snakke om temaet med medelever", options: { fontSize: 15 } },
-  ], { x: 0.6, y: 1.25, w: 8.8, h: 3.6, color: C.textDark, fontFace: "Calibri", valign: "top" });
-  s2.addNotes("Ga gjennom laeringsmalene. Spor elevene om de har sett eksempler pa " + tema + ".");
+  // Toppbanner
+  s2.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 1.1, fill: { color: C.primary }, line: { color: C.primary } });
+  s2.addText("Hva skal vi lære i dag?", { x: 0.5, y: 0.15, w: 9.0, h: 0.8, fontSize: 28, bold: true, color: C.white, fontFace: "Calibri", valign: "middle" });
+  // 3 store mål-kort
+  var mal = [
+    "Forstå og forklare: " + tema,
+    "Gjenkjenne " + kortTekst(tema, 30) + " i tekster",
+    "Bruke " + kortTekst(tema, 30) + " i egne setninger"
+  ];
+  var malFarger = [C.accent, C.green, "7B5EA7"];
+  mal.forEach(function(m, i) {
+    var x = 0.3 + i * 3.2;
+    s2.addShape(pres.shapes.RECTANGLE, { x: x, y: 1.3, w: 3.0, h: 3.8, fill: { color: malFarger[i] }, line: { color: malFarger[i] }, shadow: mk() });
+    // Stort tall
+    s2.addText((i + 1).toString(), { x: x, y: 1.5, w: 3.0, h: 1.2, fontSize: 52, bold: true, color: C.white, fontFace: "Calibri", align: "center" });
+    // Mål-tekst
+    s2.addText(m, { x: x + 0.15, y: 2.85, w: 2.7, h: 2.0, fontSize: 15, color: C.white, fontFace: "Calibri", align: "center", valign: "top" });
+  });
+  s2.addNotes("Læringsmål: Gå gjennom de tre målene. Si: 'På slutten av timen skal dere klare disse tre tingene.'\nTips: La elevene lese målene høyt – ett mål hver.");
 
-  // ── Slide 3: Forklaring ──
+  // ══════════════════════════════════════
+  // SLIDE 3: GRAMMATIKKREGEL – én regel, stort og visuelt
+  // ══════════════════════════════════════
   var s3 = pres.addSlide();
-  s3.background = { color: "F8FBFF" };
+  s3.background = { color: C.gray };
   s3.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 1.0, fill: { color: C.accent }, line: { color: C.accent } });
-  s3.addText("Grammatikk - forklaring", { x: 0.4, y: 0.18, w: 9.2, h: 0.65, fontSize: 26, bold: true, color: C.white, fontFace: "Calibri" });
-  s3.addShape(pres.shapes.RECTANGLE, { x: 0.3, y: 1.1, w: 9.4, h: 4.0, fill: { color: C.white }, line: { color: C.light, pt: 1 }, shadow: mk() });
-  var forkLinjer = forklaring.split("\n").filter(function(l) { return l.trim(); }).slice(0, 9);
-  if (forkLinjer.length > 0) {
-    var forkRuns = forkLinjer.map(function(l, i) {
-      return { text: l, options: { breakLine: i < forkLinjer.length - 1, fontSize: 14 } };
-    });
-    s3.addText(forkRuns, { x: 0.55, y: 1.25, w: 9.0, h: 3.7, color: C.textDark, fontFace: "Calibri", valign: "top" });
-  }
-  s3.addNotes("Les forklaringen hoyt. Pause og sjekk forstaelse ved hvert punkt.");
+  s3.addText("Regelen", { x: 0.5, y: 0.1, w: 9.0, h: 0.8, fontSize: 28, bold: true, color: C.white, fontFace: "Calibri", valign: "middle" });
 
-  // ── Slide 4: Monstre med bilde ──
+  // Hent første 2 setninger fra forklaring = kjerneregelen
+  var forkLinjer = splittILinjer(forklaring, 2);
+  var kjerneRegel = forkLinjer.join(" ");
+
+  // Stor regelkort i midten
+  s3.addShape(pres.shapes.RECTANGLE, { x: 0.4, y: 1.15, w: 9.2, h: 1.9, fill: { color: C.white }, line: { color: C.accent, pt: 3 }, shadow: mk() });
+  s3.addText(kortTekst(kjerneRegel, 200), {
+    x: 0.6, y: 1.25, w: 8.8, h: 1.7,
+    fontSize: 18, color: C.textDark, fontFace: "Calibri",
+    align: "left", valign: "middle"
+  });
+
+  // Husk-boks
+  var restForklaring = splittILinjer(forklaring, 5).slice(2).join(" ");
+  if (restForklaring.length > 10) {
+    s3.addShape(pres.shapes.RECTANGLE, { x: 0.4, y: 3.25, w: 9.2, h: 1.9, fill: { color: "FFF8E7" }, line: { color: C.amber, pt: 2 } });
+    s3.addText("💡  " + kortTekst(restForklaring, 220), {
+      x: 0.6, y: 3.35, w: 8.8, h: 1.6,
+      fontSize: 15, color: "6B4F00", fontFace: "Calibri",
+      align: "left", valign: "middle"
+    });
+  }
+  s3.addNotes("Presentér kjerneregelen. Si regelen med egne ord – IKKE les fra sliden.\nSpør: 'Har noen sett dette i norsk før?' La elevene gi eksempler.\nSkriv regelen på tavlen med egne ord.");
+
+  // ══════════════════════════════════════
+  // SLIDE 4: EKSEMPEL – visuell before/after
+  // ══════════════════════════════════════
   var s4 = pres.addSlide();
   s4.background = { color: C.white };
-  var tw = bilde2 ? 5.3 : 9.4;
-  s4.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 0.08, fill: { color: C.green }, line: { color: C.green } });
-  s4.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0.08, w: bilde2 ? 5.7 : W, h: 0.92, fill: { color: C.lightGreen }, line: { color: C.lightGreen } });
-  s4.addText("Monstre og eksempler", { x: 0.4, y: 0.18, w: bilde2 ? 5.0 : 9.2, h: 0.68, fontSize: 24, bold: true, color: C.green, fontFace: "Calibri" });
+  s4.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 1.0, fill: { color: C.green }, line: { color: C.green } });
+  s4.addText("Se på eksemplene", { x: 0.5, y: 0.1, w: 9.0, h: 0.8, fontSize: 28, bold: true, color: C.white, fontFace: "Calibri", valign: "middle" });
 
-  if (bilde2) {
-    s4.addImage({ data: bilde2, x: 5.9, y: 1.0, w: 3.8, h: 4.3, sizing: { type: "cover", w: 3.8, h: 4.3 } });
+  // Hent eksempellinjer fra grammatikkForklaring
+  var eksLinjer = grammatikkForklaring.split("\n").filter(function(l) { return l.trim().length > 3; }).slice(0, 4);
+
+  if (bilde2 && eksLinjer.length > 0) {
+    // To-kolonne: eksempler til venstre, bilde til høyre
+    eksLinjer.forEach(function(ex, i) {
+      var y = 1.1 + i * 1.1;
+      var tekst = ex.replace(/^[-*•]\s*/, "").trim();
+      s4.addShape(pres.shapes.RECTANGLE, { x: 0.3, y: y, w: 5.5, h: 0.9, fill: { color: i % 2 === 0 ? C.lightGreen : "F0FFF4" }, line: { color: C.green, pt: 1 } });
+      s4.addText(kortTekst(tekst, 80), { x: 0.5, y: y + 0.05, w: 5.2, h: 0.8, fontSize: 14, color: C.textDark, fontFace: "Calibri", valign: "middle" });
+    });
+    s4.addImage({ data: bilde2, x: 6.1, y: 1.1, w: 3.6, h: 4.1, sizing: { type: "cover", w: 3.6, h: 4.1 } });
+  } else {
+    // Full bredde uten bilde
+    eksLinjer.forEach(function(ex, i) {
+      var y = 1.1 + i * 1.1;
+      var tekst = ex.replace(/^[-*•]\s*/, "").trim();
+      s4.addShape(pres.shapes.RECTANGLE, { x: 0.3, y: y, w: 9.4, h: 0.9, fill: { color: i % 2 === 0 ? C.lightGreen : "F0FFF4" }, line: { color: C.green, pt: 1 } });
+      s4.addText(kortTekst(tekst, 120), { x: 0.5, y: y + 0.05, w: 9.1, h: 0.8, fontSize: 15, color: C.textDark, fontFace: "Calibri", valign: "middle" });
+    });
   }
+  s4.addNotes("Eksempler: Pek på hvert eksempel og les det høyt.\nSpør: 'Kan du forklare hvorfor dette er riktig?'\nBe elevene lage egne lignende setninger – enten muntlig eller på tavlen.");
 
-  var eksLinjer = grammatikkForklaring.split("\n").filter(function(l) { return l.trim(); }).slice(0, 5);
-  eksLinjer.forEach(function(ex, i) {
-    var y = 1.15 + i * 0.85;
-    s4.addShape(pres.shapes.RECTANGLE, { x: 0.3, y: y, w: tw, h: 0.72, fill: { color: i % 2 === 0 ? C.lightGreen : "F0FFF4" }, line: { color: C.green, pt: 0.5 } });
-    s4.addText(ex.replace(/^[-*]\s*/, ""), { x: 0.5, y: y + 0.06, w: tw - 0.2, h: 0.6, fontSize: 13, color: C.textDark, fontFace: "Calibri", valign: "middle" });
-  });
-  s4.addNotes("Ga gjennom eksemplene. La elevene lage egne lignende setninger.");
-
-  // ── Slide 5: Lesetekst ──
+  // ══════════════════════════════════════
+  // SLIDE 5: LESETEKST – chunked, ikke vegg av tekst
+  // ══════════════════════════════════════
   var s5 = pres.addSlide();
   s5.background = { color: "FFFEF5" };
   s5.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 1.0, fill: { color: C.amber }, line: { color: C.amber } });
-  s5.addText("Lesetekst", { x: 0.4, y: 0.18, w: 9.2, h: 0.65, fontSize: 26, bold: true, color: C.dark, fontFace: "Calibri" });
-  s5.addShape(pres.shapes.RECTANGLE, { x: 0.3, y: 1.1, w: 9.4, h: 4.0, fill: { color: C.white }, line: { color: "DDCC88", pt: 1.5 }, shadow: mk() });
-  var leseLinjer = lesetekst.split("\n").filter(function(l) { return l.trim(); }).slice(0, 10);
-  if (leseLinjer.length > 0) {
-    var leseRuns = leseLinjer.map(function(l, i) {
-      return { text: l, options: { breakLine: i < leseLinjer.length - 1, fontSize: 13 } };
-    });
-    s5.addText(leseRuns, { x: 0.55, y: 1.25, w: 9.0, h: 3.7, color: C.textDark, fontFace: "Calibri", valign: "top" });
-  }
-  s5.addNotes("Les teksten hoyt. Stopp ved setninger som illustrerer " + tema + ".");
+  s5.addText("Les teksten", { x: 0.5, y: 0.1, w: 6.0, h: 0.8, fontSize: 28, bold: true, color: C.dark, fontFace: "Calibri", valign: "middle" });
+  // Instruksjonsboble
+  s5.addShape(pres.shapes.RECTANGLE, { x: 6.3, y: 0.15, w: 3.4, h: 0.7, fill: { color: "FFF3CD" }, line: { color: C.amber, pt: 1 } });
+  s5.addText("Finn eksempler på " + kortTekst(tema, 25), { x: 6.4, y: 0.15, w: 3.2, h: 0.7, fontSize: 12, color: "7A5500", fontFace: "Calibri", valign: "middle" });
 
-  // ── Slide 6: Oppgaver ──
+  // Teksten i én lesbar boks – ikke for mye
+  var leseAvsnitt = lesetekst.split("\n").filter(function(l) { return l.trim().length > 3; }).slice(0, 6).join(" ");
+  s5.addShape(pres.shapes.RECTANGLE, { x: 0.4, y: 1.15, w: 9.2, h: 4.1, fill: { color: C.white }, line: { color: "DDCC88", pt: 2 }, shadow: mk() });
+  s5.addText(kortTekst(leseAvsnitt, 600), {
+    x: 0.65, y: 1.3, w: 8.7, h: 3.8,
+    fontSize: 15, color: C.textDark, fontFace: "Calibri",
+    align: "left", valign: "top", paraSpaceAfter: 6
+  });
+  s5.addNotes("Lesetekst: Les teksten høyt – du eller en elev.\nOppgave: 'Finn alle eksemplene på " + tema + " i teksten. Understrek dem.'\nDiskuter: Hvilke ord/former la dere merke til?");
+
+  // ══════════════════════════════════════
+  // SLIDE 6: OPPGAVEOVERSIKT – visuell og oversiktlig
+  // ══════════════════════════════════════
   var s6 = pres.addSlide();
-  s6.background = { color: C.white };
-  s6.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 0.08, fill: { color: C.primary }, line: { color: C.primary } });
-  s6.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0.08, w: W, h: 0.92, fill: { color: C.light }, line: { color: C.light } });
-  s6.addText("Oppgaver - oversikt", { x: 0.4, y: 0.18, w: 9.2, h: 0.68, fontSize: 26, bold: true, color: C.primary, fontFace: "Calibri" });
+  s6.background = { color: C.gray };
+  s6.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 1.0, fill: { color: C.primary }, line: { color: C.primary } });
+  s6.addText("Oppgavene dine", { x: 0.5, y: 0.1, w: 9.0, h: 0.8, fontSize: 28, bold: true, color: C.white, fontFace: "Calibri", valign: "middle" });
+
   var brev = ["A","B","C","D","E"];
+  var oppgFarger = [C.accent, C.green, "7B5EA7", C.red, C.amber];
+  var oppgLysFarger = [C.light, C.lightGreen, C.lightLilla, C.lightRed, "FFF8E7"];
+
   oppgaver.slice(0, 5).forEach(function(oppg, i) {
     var col = i < 3 ? 0 : 1;
     var row = i < 3 ? i : i - 3;
     var x = col === 0 ? 0.3 : 5.3;
-    var y = 1.15 + row * 1.2;
-    s6.addShape(pres.shapes.RECTANGLE, { x: x, y: y, w: 4.7, h: 1.0, fill: { color: i % 2 === 0 ? C.light : "EEF5FF" }, line: { color: C.accent, pt: 0.5 }, shadow: mk() });
-    s6.addText(brev[i] + ")  " + (oppg.type || ""), { x: x + 0.12, y: y + 0.07, w: 4.5, h: 0.38, fontSize: 13, bold: true, color: C.primary, fontFace: "Calibri" });
-    var instr = (oppg.instruksjon || "").slice(0, 68) + ((oppg.instruksjon || "").length > 68 ? "..." : "");
-    s6.addText(instr, { x: x + 0.12, y: y + 0.48, w: 4.5, h: 0.46, fontSize: 11, color: C.textMid, fontFace: "Calibri" });
-  });
-  s6.addNotes("Presenter oppgaveoversikten og forklar instruksjonene.");
+    var y = 1.1 + row * 1.45;
+    var w = col === 0 ? (i < 3 ? 4.6 : 4.6) : 4.6;
 
-  // ── Slide 7: Diskusjon ──
-  var s7 = pres.addSlide();
-  s7.background = { color: C.primary };
-  s7.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 0.08, fill: { color: C.amber }, line: { color: C.amber } });
-  s7.addText("Diskusjon og refleksjon", { x: 0.5, y: 0.4, w: 9.0, h: 0.9, fontSize: 30, bold: true, color: C.white, fontFace: "Calibri", align: "center" });
-  var sporsmal = [
-    "Forklar " + tema + " til en klassekamerat med egne ord.",
-    "Lag en setning med " + tema + " om noe fra din hverdag.",
-    "Nar bruker vi dette pa norsk? Gi et eksempel.",
-    "Hva er den vanligste feilen folk gjor med " + tema + "?"
-  ];
-  sporsmal.forEach(function(spm, i) {
-    var y = 1.45 + i * 0.95;
-    s7.addShape(pres.shapes.RECTANGLE, { x: 0.4, y: y, w: 9.2, h: 0.78, fill: { color: C.white, transparency: 88 }, line: { color: C.white, transparency: 60, pt: 0.5 } });
-    s7.addText((i + 1) + ".  " + spm, { x: 0.6, y: y + 0.08, w: 8.8, h: 0.62, fontSize: 14, color: C.white, fontFace: "Calibri", valign: "middle" });
+    // Farget venstre-stripe + lys bakgrunn
+    s6.addShape(pres.shapes.RECTANGLE, { x: x, y: y, w: w, h: 1.25, fill: { color: oppgLysFarger[i] }, line: { color: oppgFarger[i], pt: 1 } });
+    s6.addShape(pres.shapes.RECTANGLE, { x: x, y: y, w: 0.45, h: 1.25, fill: { color: oppgFarger[i] }, line: { color: oppgFarger[i] } });
+    // Bokstav i stripe
+    s6.addText(brev[i], { x: x, y: y, w: 0.45, h: 1.25, fontSize: 22, bold: true, color: C.white, fontFace: "Calibri", align: "center", valign: "middle", margin: 0 });
+    // Oppgavetype
+    s6.addText(kortTekst(oppg.type || "", 30), { x: x + 0.55, y: y + 0.05, w: w - 0.65, h: 0.45, fontSize: 14, bold: true, color: oppgFarger[i], fontFace: "Calibri", valign: "middle" });
+    // Instruksjon
+    s6.addText(kortTekst(oppg.instruksjon || "", 65), { x: x + 0.55, y: y + 0.55, w: w - 0.65, h: 0.6, fontSize: 11, color: C.textMid, fontFace: "Calibri", valign: "top" });
   });
-  s7.addNotes("Avsluttende diskusjon. Oppsummer hva vi har laert om " + tema + ".");
+  s6.addNotes("Oppgaver: Gå gjennom instruksjonene for hver oppgave FØR elevene begynner.\nGjør ett eksempel på tavlen for oppgave A.\nElevene jobber i arbeidsarket – sirkuler og hjelp underveis.");
+
+  // ══════════════════════════════════════
+  // SLIDE 7: PAR-AKTIVITET – konkret og handlingsorientert
+  // ══════════════════════════════════════
+  var s7 = pres.addSlide();
+  s7.background = { color: C.white };
+  s7.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 1.0, fill: { color: "7B5EA7" }, line: { color: "7B5EA7" } });
+  s7.addText("🗣  Snakk med en partner", { x: 0.5, y: 0.1, w: 9.0, h: 0.8, fontSize: 28, bold: true, color: C.white, fontFace: "Calibri", valign: "middle" });
+
+  var aktiviteter = [
+    { ikon: "1️⃣", tittel: "Forklar regelen", tekst: "Forklar " + kortTekst(tema, 25) + " for partneren din med egne ord" },
+    { ikon: "2️⃣", tittel: "Lag en setning", tekst: "Lag én setning om deg selv med " + kortTekst(tema, 25) },
+    { ikon: "3️⃣", tittel: "Finn feilen", tekst: "Hva er galt? Rett setningen: " + lagFeilSetning(tema) }
+  ];
+
+  aktiviteter.forEach(function(akt, i) {
+    var y = 1.15 + i * 1.4;
+    s7.addShape(pres.shapes.RECTANGLE, { x: 0.3, y: y, w: 9.4, h: 1.2, fill: { color: C.lightLilla }, line: { color: "7B5EA7", pt: 1 }, shadow: mk() });
+    s7.addText(akt.ikon, { x: 0.4, y: y + 0.05, w: 0.7, h: 1.1, fontSize: 28, fontFace: "Calibri", valign: "middle", align: "center" });
+    s7.addText(akt.tittel, { x: 1.2, y: y + 0.08, w: 8.0, h: 0.45, fontSize: 16, bold: true, color: "5A3E88", fontFace: "Calibri", valign: "middle" });
+    s7.addText(akt.tekst, { x: 1.2, y: y + 0.55, w: 8.0, h: 0.55, fontSize: 13, color: C.textDark, fontFace: "Calibri", valign: "middle" });
+  });
+  s7.addNotes("Par-aktivitet: Gi elevene 5-7 minutter.\nGå rundt og lytt – noter typiske feil for oppsummering.\nEtter par-arbeid: Ta 2-3 par som deler svaret med klassen.");
+
+  // ══════════════════════════════════════
+  // SLIDE 8: OPPSUMMERING – exit ticket
+  // ══════════════════════════════════════
+  var s8 = pres.addSlide();
+  if (bilde1) {
+    s8.addImage({ data: bilde1, x: 0, y: 0, w: W, h: H, sizing: { type: "cover", w: W, h: H } });
+    s8.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: H, fill: { color: "000000", transparency: 50 }, line: { color: "000000", transparency: 50 } });
+  } else {
+    s8.background = { color: C.primary };
+  }
+  s8.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 0.1, fill: { color: C.amber }, line: { color: C.amber } });
+  s8.addText("Hva har du lært?", { x: 0.5, y: 0.3, w: 9.0, h: 0.9, fontSize: 34, bold: true, color: C.white, fontFace: "Calibri", align: "center" });
+
+  var exitSporsmal = [
+    "Hva er regelen for " + kortTekst(tema, 25) + "?",
+    "Gi ett eksempel fra teksten vi leste.",
+    "Hva var vanskeligst i dag?"
+  ];
+  exitSporsmal.forEach(function(spm, i) {
+    var y = 1.35 + i * 1.3;
+    s8.addShape(pres.shapes.RECTANGLE, { x: 0.5, y: y, w: 9.0, h: 1.05, fill: { color: C.white, transparency: 15 }, line: { color: C.white, transparency: 40, pt: 1 } });
+    s8.addText((i + 1) + ".", { x: 0.65, y: y + 0.05, w: 0.5, h: 0.95, fontSize: 22, bold: true, color: C.amber, fontFace: "Calibri", valign: "middle" });
+    s8.addText(spm, { x: 1.25, y: y + 0.08, w: 8.0, h: 0.9, fontSize: 17, color: C.white, fontFace: "Calibri", valign: "middle" });
+  });
+  s8.addShape(pres.shapes.RECTANGLE, { x: 0, y: H - 0.1, w: W, h: 0.1, fill: { color: C.accent }, line: { color: C.accent } });
+  s8.addNotes("Oppsummering / Exit ticket: Bruk disse spørsmålene til å sjekke forståelse.\nAlternativ: Be elevene skrive ned svaret på ett spørsmål på en lapp (exit ticket).\nKnytt tilbake til læringsmålene fra slide 2 – er alle målene nådd?");
 
   return pres;
+}
+
+// Lag en enkel feilsetning basert på tema
+function lagFeilSetning(tema) {
+  var t = tema.toLowerCase();
+  if (t.includes("verb") || t.includes("presens")) return "Han ikke spiser frokost om morgenen.";
+  if (t.includes("preteritum")) return "I går jeg gikk til jobben tidlig.";
+  if (t.includes("perfektum")) return "Jeg har gå på skolen i tre år.";
+  if (t.includes("adjektiv")) return "Hun har en rødt sykkel og en blåt bil.";
+  if (t.includes("substantiv")) return "Jeg har to boka og en pennen.";
+  if (t.includes("v2") || t.includes("inversjon")) return "I dag jeg jobber på kontoret.";
+  if (t.includes("preposisjon")) return "Jeg bor på Norge og jobber i Oslo.";
+  if (t.includes("pronomen")) return "Meg og han gikk til butikken.";
+  return "Idag jeg er veldig glad for å lære norsk.";
 }
 
 module.exports = async function handler(req, res) {
@@ -240,18 +336,13 @@ module.exports = async function handler(req, res) {
   try {
     var body = req.body;
     if (!body || !body.data) return res.status(400).json({ feil: "Mangler data" });
-
     var unsplashKey = process.env.UNSPLASH_ACCESS_KEY || null;
-    console.log("UNSPLASH_ACCESS_KEY tilgjengelig: " + (unsplashKey ? "JA (" + unsplashKey.slice(0,6) + "...)" : "NEI"));
-
     var pres = await lagPresentasjon(body.data, unsplashKey);
     var filnavn = (body.data.tema || "grammatikk").replace(/[^a-zA-Z0-9]/g, "_") + "_" + (body.data.niva || "A1") + "_presentasjon.pptx";
     var buffer = await pres.write({ outputType: "nodebuffer" });
-
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
     res.setHeader("Content-Disposition", "attachment; filename=\"" + filnavn + "\"");
     res.send(buffer);
-
   } catch (e) {
     console.error("lag-pptx feil:", e);
     res.status(500).json({ feil: "Feil ved generering: " + e.message });
